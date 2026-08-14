@@ -7,8 +7,8 @@ import dash_ag_grid as dag
 
 from config import BANK_CHARGE, MEMBER_TYPES, NOT_OK, OK, SEASONS, STORAGE_COST, STORAGE_OWNER, TRANS_TYPES, URI
 import find_vpdata as fvp
+import transaction_vpdata as tvp
 import vp_tools as vpt
-import write_vpdata as wvp
 
 client = MongoClient(URI, server_api=ServerApi('1'))
 db = client.myDatabase
@@ -21,130 +21,139 @@ NAMES = [
 ]
 PRODUCTIONS = [
     {
-        'label': f"{x['title']} ({x['open_date'].year})",
+        'label': f"{x['title']}",
+        'value': str(x['_id']),
+    }
+    for x in db.festivals.find({})
+] + [
+    {
+        'label': f"{x['title']}", # ({x.get('open_date')})",
         'value': str(x['_id']),
     }
     for x in db.productions.find({})
 ]
+PRODUCTIONS.reverse()
 VERIFICATION = [
     {'label': OK, 'value': True},
     {'label': NOT_OK, 'value': False},
 ]
-fields = {
-    'transaction-type': {'type': 'dropdown', 'options': TRANS_TYPES},
-    'membership-type': {'type': 'dropdown', 'options': MEMBER_TYPES},
-    'date': {'type': 'date'},
-    'amount': {'type': 'number'},
-    'description': {'type': 'text'},
-    'recipient': {'type': 'dropdown', 'options': NAMES},
-    'recipient-text': {'type': 'text'},
-    'member': {'type': 'dropdown-multi', 'options': NAMES},
-    'member-1': {'type': 'text'},
-    'member-2': {'type': 'text'},
-    'member-3': {'type': 'text'},
-    'production': {'type': 'dropdown', 'options': PRODUCTIONS},
-    'month': {'type': 'number'},
-    'year': {'type': 'number'},
-    'season': {'type': 'dropdown-multi', 'options': SEASONS},
-    'membership-type-find': {'type': 'dropdown-multi', 'options': MEMBER_TYPES},
-    'verify': {'type': 'dropdown', 'options': VERIFICATION},
+transaction_fields = {
+    't-transaction-type': {'type': 'dropdown', 'options': TRANS_TYPES},
+    't-membership-type': {'type': 'dropdown', 'options': MEMBER_TYPES},
+    't-date': {'type': 'date'},
+    't-amount': {'type': 'number'},
+    't-description': {'type': 'text'},
+    't-recipient': {'type': 'dropdown', 'options': NAMES},
+    't-recipient-text': {'type': 'text'},
+    't-member': {'type': 'dropdown-multi', 'options': NAMES},
+    't-member-1': {'type': 'text'},
+    't-member-2': {'type': 'text'},
+    't-member-3': {'type': 'text'},
+    't-production': {'type': 'dropdown', 'options': PRODUCTIONS},
+    # 'month': {'type': 'number'},
+    # 'year': {'type': 'number'},
+    # 'season': {'type': 'dropdown-multi', 'options': SEASONS},
+    # 'membership-type-find': {'type': 'dropdown-multi', 'options': MEMBER_TYPES},
+    't-verify': {'type': 'dropdown', 'options': VERIFICATION},
 }
-tab_values = {
-    'tab-transaction': {
+transaction_tabs = {
+    't-tab-misc': {
         'label': "Add Transaction",
         'defaults': {
-            'transaction-type': None,
-            'date': datetime.today().date(),
-            'amount': None,
-            'description': None,
-            'recipient': None,
-            'recipient-text': None,
+            't-transaction-type': None,
+            't-date': datetime.today().date(),
+            't-amount': None,
+            't-description': None,
+            't-recipient': None,
+            't-recipient-text': None,
+            't-production': None,
         },
     },
-    'tab-renew': {
+    't-tab-renew': {
         'label': "Add Renewing Member(s)",
         'defaults': {
-            'membership-type': 'Full',
-            'date': datetime.today().date(),
-            'amount': 95,
-            'member': None,
+            't-membership-type': 'Full',
+            't-date': datetime.today().date(),
+            't-amount': 95,
+            't-member': None,
         },
     },
-    'tab-new': {
+    't-tab-new': {
         'label': "Add New Member(s)",
         'defaults': {
-            'membership-type': 'Full',
-            'date': datetime.today().date(),
-            'amount': 95,
-            'member-1': None,
-            'member-2': None,
-            'member-3': None,
+            't-membership-type': 'Full',
+            't-date': datetime.today().date(),
+            't-amount': 95,
+            't-member-1': None,
+            't-member-2': None,
+            't-member-3': None,
         },
     },
-    'tab-mixed': {
+    't-tab-mixed': {
         'label': "Add Mixed New/Renewing Members",
         'keep': [
             'membership-type', 'date', 'amount',
             'member', 'member-1', 'member-2', 'member-3'
         ],
         'defaults': {
-            'membership-type': 'Full',
-            'date': datetime.today().date(),
-            'amount': None,
-            'member': None,
-            'member-1': None,
-            'member-2': None,
-            'member-3': None,
+            't-membership-type': 'Full',
+            't-date': datetime.today().date(),
+            't-amount': None,
+            't-member': None,
+            't-member-1': None,
+            't-member-2': None,
+            't-member-3': None,
         },
     },
-    'tab-storage': {
+    't-tab-storage': {
         'label': "Add Storage",
         'defaults': {
-            'transaction-type': 'Storage',
-            'date': datetime.today().date().replace(day=1) - timedelta(1),
-            'amount': STORAGE_COST,
-            'recipient-text': STORAGE_OWNER,
+            't-transaction-type': 'Storage',
+            't-date': datetime.today().date().replace(day=1) - timedelta(1),
+            't-amount': STORAGE_COST,
+            't-recipient-text': STORAGE_OWNER,
         },
     },
-    'tab-bank-charge': {
+    't-tab-bank-charge': {
         'label': "Add Bank Charge",
         'defaults': {
-            'transaction-type': 'Bank Charges',
-            'date': datetime.today().date().replace(day=1) - timedelta(1),
-            'amount': BANK_CHARGE,
+            't-transaction-type': 'Bank Charges',
+            't-date': datetime.today().date().replace(day=1) - timedelta(1),
+            't-amount': BANK_CHARGE,
         },
     },
-    'tab-balance': {
-        'label': "Add Balance Value",
-        'defaults': {
-            'amount': None,
-            'month': (datetime.today().date().replace(day=1) - timedelta(1)).month,
-            'year': (datetime.today().date().replace(day=1) - timedelta(1)).year,
-        },
-    },
-    'tab-membership-list': {
-        'label': "Show Members",
-        'defaults': {
-            'season': SEASONS[-1],
-            'membership-type-find': MEMBER_TYPES,
-        },
-    },
+    # 'tab-balance': {
+    #     'label': "Add Balance Value",
+    #     'defaults': {
+    #         'amount': None,
+    #         'month': (datetime.today().date().replace(day=1) - timedelta(1)).month,
+    #         'year': (datetime.today().date().replace(day=1) - timedelta(1)).year,
+    #     },
+    # },
+    # 'tab-membership-list': {
+    #     'label': "Show Members",
+    #     'defaults': {
+    #         'season': SEASONS[-1],
+    #         'membership-type-find': MEMBER_TYPES,
+    #     },
+    # },
 }
 
 app_layout = [
     html.H1('Village Players Database'),
+    html.H2('Add New Transaction: '),
     dcc.Tabs(
-        id='tabs-access-data', value=list(tab_values.keys())[0], children=[
+        id='t-tabs', value=list(transaction_tabs.keys())[0], children=[
             dcc.Tab(label=layout['label'], value=tab)
-            for tab, layout in tab_values.items()
+            for tab, layout in transaction_tabs.items()
         ]
     )
 ]
 
-for field, layout in fields.items():
+for field, layout in transaction_fields.items():
     app_layout.append(
         html.Div([
-            field.replace('-', ' ').title() + ": ",
+            field.replace('t-', '').replace('-', ' ').title() + ": ",
             (
                 dcc.Input(id=field, type=layout['type']) if layout['type'] in ['text', 'number']
                 else (
@@ -163,32 +172,32 @@ for field, layout in fields.items():
 
 app_layout.append(
     html.Div([
-        html.Div(id='returned'),
+        html.Div(id='t-returned'),
     ])
 )
-app_layout.append(
-    html.Div([
-        dag.AgGrid(
-            id='dataframe',
-            rowData=[],
-            columnDefs=[
-                {'field': 'season'},
-                {'field': 'type'},
-                {'field': 'surname'},
-                {'field': 'first_name', 'headerName': 'First Name'},
-                {'field': 'email'},
-            ],
-        )
-    ])
-)
+# app_layout.append(
+#     html.Div([
+#         dag.AgGrid(
+#             id='dataframe',
+#             rowData=[],
+#             columnDefs=[
+#                 {'field': 'season'},
+#                 {'field': 'type'},
+#                 {'field': 'surname'},
+#                 {'field': 'first_name', 'headerName': 'First Name'},
+#                 {'field': 'email'},
+#             ],
+#         )
+#     ])
+# )
 
 app = Dash(__name__)
 
 app.layout = html.Div(app_layout)
 
 @callback(
-    Output('verify', 'value'),
-    Input('tabs-access-data', 'value')
+    Output('t-verify', 'value'),
+    Input('t-tabs', 'value')
 )
 def falsify_on_tab_switch(tab: str):
     return False
@@ -203,40 +212,38 @@ def falsify_on_tab_switch(tab: str):
 def update_div(field):
     @callback(
         Output(f'div-{field}', 'hidden'),
-        Input('tabs-access-data', 'value')
+        Input('t-tabs', 'value')
     )
     def hide_transaction_type(tab: str):
-        return not field in tab_values[tab]['defaults'].keys()
+        return not field in transaction_tabs[tab]['defaults'].keys()
 
     @callback(
-        Output(field, 'date' if fields[field]['type'] == 'date' else 'value'),
-        Input('tabs-access-data', 'value')
+        Output(field, 'date' if transaction_fields[field]['type'] == 'date' else 'value'),
+        Input('t-tabs', 'value')
     )
     def hide_transaction_type(tab: str):
-        return tab_values[tab]['defaults'].get(field)
+        return transaction_tabs[tab]['defaults'].get(field)
 
-for field in fields.keys():
-    if field != 'verify':
+for field in transaction_fields.keys():
+    if field != 't-verify':
         update_div(field)
 
 @callback(
-    Output('returned', 'children'),
-    Input('verify', 'value'),
-    State('tabs-access-data', 'value'),
-    State('transaction-type', 'value'),
-    State('membership-type', 'value'),
-    State('date', 'date'),
-    State('amount', 'value'),
-    State('description', 'value'),
-    State('recipient', 'value'),
-    State('recipient-text', 'value'),
-    State('member', 'value'),
-    State('member-1', 'value'),
-    State('member-2', 'value'),
-    State('member-3', 'value'),
-    State('production', 'value'),
-    State('month', 'value'),
-    State('year', 'value')
+    Output('t-returned', 'children'),
+    Input('t-verify', 'value'),
+    State('t-tabs', 'value'),
+    State('t-transaction-type', 'value'),
+    State('t-membership-type', 'value'),
+    State('t-date', 'date'),
+    State('t-amount', 'value'),
+    State('t-description', 'value'),
+    State('t-recipient', 'value'),
+    State('t-recipient-text', 'value'),
+    State('t-member', 'value'),
+    State('t-member-1', 'value'),
+    State('t-member-2', 'value'),
+    State('t-member-3', 'value'),
+    State('t-production', 'value')
 )
 def return_status(
     verified: bool,
@@ -252,9 +259,7 @@ def return_status(
     member_1: str | None,
     member_2: str | None,
     member_3: str | None,
-    production: str | None,
-    month: int | None,
-    year: int | None
+    production: str | None
 ) -> str:
     if not verified:
         try:
@@ -265,59 +270,59 @@ def return_status(
 
     if tab == 'tab-transaction':
         return vpt.handle_status_message(
-            tab, wvp.add_misc_transaction(
-                db.transactions, t_type, date, amount, description, recipient, recipient_text
+            tab, tvp.add_misc_transaction(
+                db.transactions, t_type, date, amount, description, recipient, recipient_text, production
             )
         )
     elif tab == 'tab-renew':
         return vpt.handle_status_message(
-            tab, wvp.add_renew_transaction(
+            tab, tvp.add_renew_transaction(
                 db.transactions, db.members, date, m_type, amount, member
             )
         )
     elif tab == 'tab-new':
         return vpt.handle_status_message(
-            tab, wvp.add_new_transaction(
+            tab, tvp.add_new_transaction(
                 db.transacations, db.people, db.members, date, m_type, amount,
                 member_1, member_2, member_3
             )
         )
     elif tab == 'tab-storage':
         return vpt.handle_status_message(
-            tab, wvp.add_storage_cost(
+            tab, tvp.add_storage_cost(
                 db.transactions, date, amount, recipient_text
             )
         )
     elif tab == 'tab-bank-charge':
         return vpt.handle_status_message(
-            tab, wvp.add_bank_charge(
+            tab, tvp.add_bank_charge(
                 db.transactions, date, amount
             )
         )
-    elif tab == 'tab-balance':
-        return vpt.handle_status_message(
-            tab, wvp.add_balance(
-                db.balance, amount, month, year
-            )
-        )
+    # elif tab == 'tab-balance':
+    #     return vpt.handle_status_message(
+    #         tab, tvp.add_balance(
+    #             db.balance, amount, month, year
+    #         )
+    #     )
 
     return vpt.handle_status_message(tab, "Verified!")
 
-@callback(
-    Output('dataframe', 'rowData'),
-    Input('verify', 'value'),
-    State('tabs-access-data', 'value'),
-    State('season', 'value'),
-    State('membership-type-find', 'value')
-)
-def get_columns(verified: bool, tab: str, season: list[str], m_type: list[str]):
-    if not verified:
-        return []
+# @callback(
+#     Output('dataframe', 'rowData'),
+#     Input('verify', 'value'),
+#     State('tabs-access-data', 'value'),
+#     State('season', 'value'),
+#     State('membership-type-find', 'value')
+# )
+# def get_columns(verified: bool, tab: str, season: list[str], m_type: list[str]):
+#     if not verified:
+#         return []
 
-    if tab == 'tab-membership-list':
-        return fvp.get_membership_list(
-            db.members, db.people, db.transactions, season, m_type
-        ).to_dict('records')
+#     if tab == 'tab-membership-list':
+#         return fvp.get_membership_list(
+#             db.members, db.people, db.transactions, season, m_type
+#         ).to_dict('records')
 
 if __name__ == '__main__':
     app.run(debug=True)
