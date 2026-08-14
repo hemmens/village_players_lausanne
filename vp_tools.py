@@ -41,8 +41,14 @@ def handle_decimal(amount: float) -> str:
         return Decimal128('%.2f' % amount)
 
 def handle_status_message(tab: str, message: str) -> str:
-    header = tab.replace('tab-', '').replace('-', ' ').title()
+    header = tab.split('-')[2:]
+    header = ' '.join(header).title()
     return f"{header}: {message}"
 
 def convert_objid_to_str(column: pd.Series) -> pd.Series:
     return column.apply(lambda x: str(x))
+
+# def production_year(
+#     production
+#     festivals: Collection
+# )
