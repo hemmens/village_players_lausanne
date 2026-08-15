@@ -48,7 +48,33 @@ def handle_status_message(tab: str, message: str) -> str:
 def convert_objid_to_str(column: pd.Series) -> pd.Series:
     return column.apply(lambda x: str(x))
 
-# def production_year(
-#     production
-#     festivals: Collection
-# )
+def get_productions_list(
+    productions: Collection,
+    festivals: Collection
+) -> list[dict[str, str]]:
+    ps = productions.find({})
+    fs = festivals.find({})
+
+    fs = {
+        str(f['_id']): {
+            'title': f['title'],
+            'date': f['open_date'],
+        }
+    for f in fs}
+    ps = {
+        str(p['_id']): {
+            'title': p['title'],
+            'date': p['open_date'] if p.get('open_date') else fs[str(p['festival'])]['date'],
+        }
+    for p in ps}
+
+    shows = pd.concat([
+        pd.DataFrame.from_dict(fs, orient='index'),
+        pd.DataFrame.from_dict(ps, orient='index')
+    ])
+    shows.sort_values('date', ascending=False, inplace=True)
+    shows['label'] = shows.apply(
+        lambda row: {'label': f"{row.title} ({row.date.year})", 'value': row.index}, axis=1
+    )
+
+    return shows['label'].to_list()

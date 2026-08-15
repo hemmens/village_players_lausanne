@@ -19,20 +19,7 @@ NAMES = [
     }
     for x in db.people.find({})
 ]
-PRODUCTIONS = [
-    {
-        'label': f"{x['title']}",
-        'value': str(x['_id']),
-    }
-    for x in db.festivals.find({})
-] + [
-    {
-        'label': f"{x['title']}", # ({x.get('open_date')})",
-        'value': str(x['_id']),
-    }
-    for x in db.productions.find({})
-]
-PRODUCTIONS.reverse()
+PRODUCTIONS = vpt.get_productions_list(db.productions, db.festivals)
 VERIFICATION = [
     {'label': OK, 'value': True},
     {'label': NOT_OK, 'value': False},
