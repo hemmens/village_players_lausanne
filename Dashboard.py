@@ -6,6 +6,7 @@ from pymongo.server_api import ServerApi
 import dash_ag_grid as dag
 
 from config import BANK_CHARGE, MEMBER_TYPES, NOT_OK, OK, SEASONS, STORAGE_COST, STORAGE_OWNER, TRANS_TYPES, URI
+import add_vpdata as avp
 import find_vpdata as fvp
 import transaction_vpdata as tvp
 import vp_tools as vpt
@@ -37,8 +38,6 @@ transaction_fields = {
     't-member-2': {'type': 'text'},
     't-member-3': {'type': 'text'},
     't-production': {'type': 'dropdown', 'options': PRODUCTIONS},
-    # 'month': {'type': 'number'},
-    # 'year': {'type': 'number'},
     # 'season': {'type': 'dropdown-multi', 'options': SEASONS},
     # 'membership-type-find': {'type': 'dropdown-multi', 'options': MEMBER_TYPES},
     't-verify': {'type': 'dropdown', 'options': VERIFICATION},
@@ -109,14 +108,6 @@ transaction_tabs = {
             't-amount': BANK_CHARGE,
         },
     },
-    # 'tab-balance': {
-    #     'label': "Add Balance Value",
-    #     'defaults': {
-    #         'amount': None,
-    #         'month': (datetime.today().date().replace(day=1) - timedelta(1)).month,
-    #         'year': (datetime.today().date().replace(day=1) - timedelta(1)).year,
-    #     },
-    # },
     # 'tab-membership-list': {
     #     'label': "Show Members",
     #     'defaults': {
@@ -140,7 +131,7 @@ app_layout = [
 for field, layout in transaction_fields.items():
     app_layout.append(
         html.Div([
-            field.replace('t-', '').replace('-', ' ').title() + ": ",
+            field[2:].replace('-', ' ').title() + ": ",
             (
                 dcc.Input(id=field, type=layout['type']) if layout['type'] in ['text', 'number']
                 else (
@@ -156,12 +147,39 @@ for field, layout in transaction_fields.items():
         ],
         id=f'div-{field}')
     )
+app_layout.append(html.Div(id='t-returned'))
 
+app_layout.append(html.H2('Add New Database Entry: '))
+app_layout.append(
+    dcc.Tabs(
+        id='a-tabs', value='a-tab-balance', children=[
+            dcc.Tab(label="Add New Balance", value='a-tab-balance')
+        ]
+    )
+)
 app_layout.append(
     html.Div([
-        html.Div(id='t-returned'),
-    ])
+        "Amount: ",
+        dcc.Input(id='a-balance-amount', type='number'),
+        "Month: ",
+        dcc.Input(
+            id='a-balance-month', type='number',
+            value=(datetime.today().date().replace(day=1) - timedelta(1)).month
+        ),
+        "Year: ",
+        dcc.Input(
+            id='a-balance-year', type='number',
+            value=(datetime.today().date().replace(day=1) - timedelta(1)).year
+        ),
+    ],
+    id='a-balance', hidden=False)
 )
+app_layout.append(html.Div([
+    "Verify: ",
+    dcc.Dropdown(id='a-verify', options=VERIFICATION, value=False),
+]))
+app_layout.append(html.Div(id='a-returned'))
+
 # app_layout.append(
 #     html.Div([
 #         dag.AgGrid(
@@ -182,19 +200,16 @@ app = Dash(__name__)
 
 app.layout = html.Div(app_layout)
 
-@callback(
-    Output('t-verify', 'value'),
-    Input('t-tabs', 'value')
-)
-def falsify_on_tab_switch(tab: str):
-    return False
+def falsify_on_tab_switch(prefix: str):
+    @callback(
+        Output(f'{prefix}-verify', 'value'),
+        Input(f'{prefix}-tabs', 'value')
+    )
+    def verify_falsification(tab: str):
+        return False
 
-# @callback(
-#     Output('dataframe', 'columnDefs'),
-#     Input('tabs-access-data', 'value')
-# )
-# def reset_columns_on_tab_switch(tab: str):
-#     return []
+for prefix in ['t', 'a']:
+    falsify_on_tab_switch(prefix)
 
 def update_div(field):
     @callback(
@@ -215,6 +230,13 @@ for field in transaction_fields.keys():
     if field != 't-verify':
         update_div(field)
 
+# @callback(
+#     Output('dataframe', 'columnDefs'),
+#     Input('tabs-access-data', 'value')
+# )
+# def reset_columns_on_tab_switch(tab: str):
+#     return []
+
 @callback(
     Output('t-returned', 'children'),
     Input('t-verify', 'value'),
@@ -232,7 +254,7 @@ for field in transaction_fields.keys():
     State('t-member-3', 'value'),
     State('t-production', 'value')
 )
-def return_status(
+def return_status_transaction(
     verified: bool,
     tab: str,
     t_type: str | None,
@@ -255,43 +277,69 @@ def return_status(
         except Exception as e:
             return vpt.handle_status_message(tab, e)
 
-    if tab == 'tab-transaction':
+    if tab == 't-tab-misc':
         return vpt.handle_status_message(
             tab, tvp.add_misc_transaction(
-                db.transactions, t_type, date, amount, description, recipient, recipient_text, production
+                db.transactions, t_type, date, amount, description, recipient,
+                recipient_text, production
             )
         )
-    elif tab == 'tab-renew':
+    elif tab == 't-tab-renew':
         return vpt.handle_status_message(
             tab, tvp.add_renew_transaction(
                 db.transactions, db.members, date, m_type, amount, member
             )
         )
-    elif tab == 'tab-new':
+    elif tab == 't-tab-new':
         return vpt.handle_status_message(
             tab, tvp.add_new_transaction(
                 db.transacations, db.people, db.members, date, m_type, amount,
                 member_1, member_2, member_3
             )
         )
-    elif tab == 'tab-storage':
+    elif tab == 't-tab-storage':
         return vpt.handle_status_message(
             tab, tvp.add_storage_cost(
                 db.transactions, date, amount, recipient_text
             )
         )
-    elif tab == 'tab-bank-charge':
+    elif tab == 't-tab-bank-charge':
         return vpt.handle_status_message(
             tab, tvp.add_bank_charge(
                 db.transactions, date, amount
             )
         )
-    # elif tab == 'tab-balance':
-    #     return vpt.handle_status_message(
-    #         tab, tvp.add_balance(
-    #             db.balance, amount, month, year
-    #         )
-    #     )
+
+    return vpt.handle_status_message(tab, "Verified!")
+
+@callback(
+    Output('a-returned', 'children'),
+    Input('a-verify', 'value'),
+    State('a-tabs', 'value'),
+    State('a-balance-amount', 'value'),
+    State('a-balance-month', 'value'),
+    State('a-balance-year', 'value')
+)
+def return_status_add(
+    verified: bool,
+    tab: str,
+    amount: float | None,
+    month: int | None,
+    year: int | None
+) -> str:
+    if not verified:
+        try:
+            client.admin.command('ping')
+            return vpt.handle_status_message(tab, "Ping successful!")
+        except Exception as e:
+            return vpt.handle_status_message(tab, e)
+
+    if tab == 'a-tab-balance':
+        return vpt.handle_status_message(
+            tab, avp.add_balance(
+                db.balance, amount, month, year
+            )
+        )
 
     return vpt.handle_status_message(tab, "Verified!")
 
