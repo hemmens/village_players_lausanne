@@ -14,6 +14,9 @@ def add_misc_transaction(
     recipient_text: str | None,
     production: str | None
 ) -> str:
+    if not transaction_date or not amount or not transaction_type:
+        return "Missing key data"
+
     payload = {
         'Reference': vpt.get_new_ref(transactions, SEASON),
         'Date': vpt.convert_date(transaction_date),
@@ -31,7 +34,7 @@ def add_misc_transaction(
 
     new_transaction = transactions.insert_one(payload)
 
-    return f"Misc: New transaction: {str(new_transaction.inserted_id)}"
+    return f"New transaction: {str(new_transaction.inserted_id)}"
 
 def add_renew_transaction(
     transactions: Collection,
@@ -41,6 +44,10 @@ def add_renew_transaction(
     amount: float,
     renewers: list[str]
 ) -> str:
+    if not transaction_date or not amount or not renewers:
+        return "Missing key data"
+
+    season = f'20{SEASON-1}-{SEASON}'
     new_transaction = transactions.insert_one(
         {
             'Reference': vpt.get_new_ref(transactions, SEASON),
@@ -54,18 +61,24 @@ def add_renew_transaction(
     renewer_ids = [ObjectId(x.split('|')[0]) for x in renewers]
     renewed_ids = []
     for person_id in renewer_ids:
-        new_member = members.insert_one(
-            {
-                'type': member_type,
-                'season': f'20{SEASON-1}-{SEASON}',
-                'person': person_id,
-                'payment': new_transaction.inserted_id,
-                'carry_over': False,
-            }
+        member_find = members.find_one(
+            {'season': season, 'person': person_id}
         )
-        renewed_ids.append(str(new_member.inserted_id))
+        if not member_find:
+            new_member = members.insert_one(
+                {
+                    'type': member_type,
+                    'season': season,
+                    'person': person_id,
+                    'payment': new_transaction.inserted_id,
+                    'carry_over': False,
+                }
+            )
+            renewed_ids.append(str(new_member.inserted_id))
+        else:
+            renewed_ids.append(f"{person_id} already in database")
 
-    return f"Renew: New transaction: {str(new_transaction.inserted_id)}; New members: " + ', '.join(renewed_ids) 
+    return f"New transaction: {str(new_transaction.inserted_id)}; New members: " + ', '.join(renewed_ids) 
 
 def add_new_transaction(
     transactions: Collection,
@@ -78,6 +91,10 @@ def add_new_transaction(
     member_2: str | None,
     member_3: str | None
 ) -> str:
+    if not transaction_date or not amount or not member_1:
+        return "Missing key data"
+
+    season = f'20{SEASON-1}-{SEASON}'
     member_1 = vpt.extract_new_names(member_1)
     member_2 = vpt.extract_new_names(member_2)
     member_3 = vpt.extract_new_names(member_3)
@@ -103,27 +120,41 @@ def add_new_transaction(
     person_ids = []
     member_ids = []
     for person in people_to_add:
-        new_person = people.insert_one(
-            {
-                'first_name': person['first_name'],
-                'surname': person['surname'],
-                'email_private': True,
-            }
+        person_find = people.find_one(
+            {name: person[name]} for name in ['first_name', 'surname']
         )
-        person_ids.append(str(new_person.inserted_id))
+        if not person_find:
+            new_person = people.insert_one(
+                {
+                    'first_name': person['first_name'],
+                    'surname': person['surname'],
+                    'email_private': True,
+                }
+            )
+            person_id = new_person.inserted_id
+            person_ids.append(str(person_id))
+        else:
+            person_id = person_find['_id']
+            person_ids.append(f"{person['full_name']} already in database")
 
-        new_member = members.insert_one(
-            {
-                'type': member_type,
-                'season': f'20{SEASON-1}-{SEASON}',
-                'person': new_person.inserted_id,
-                'payment': new_transaction.inserted_id,
-                'carry_over': False,
-            }
+        member_find = members.find_one(
+            {'season': season, 'person': person_id}
         )
-        member_ids.append(str(new_member.inserted_id))
+        if not member_find:
+            new_member = members.insert_one(
+                {
+                    'type': member_type,
+                    'season': season,
+                    'person': person_id,
+                    'payment': new_transaction.inserted_id,
+                    'carry_over': False,
+                }
+            )
+            member_ids.append(str(new_member.inserted_id))
+        else:
+            member_ids.append(f"{person['full_name']} already in database")
 
-    return f"New: New transaction: {str(new_transaction.inserted_id)}; New people: {', '.join(person_ids)}; New members: {', '.join(member_ids)}" 
+    return f"New transaction: {str(new_transaction.inserted_id)}; New people: {', '.join(person_ids)}; New members: {', '.join(member_ids)}" 
 
 def add_storage_cost(
     transactions: Collection,
@@ -131,6 +162,9 @@ def add_storage_cost(
     amount: float,
     recipient_text: str
 ) -> str:
+    if not transaction_date or not amount or not recipient_text:
+        return "Missing key data"
+
     new_item = transactions.insert_one(
         {
             'Reference': vpt.get_new_ref(transactions, SEASON),
@@ -141,13 +175,16 @@ def add_storage_cost(
         }
     )
 
-    return f"Storage: New storage item: {str(new_item.inserted_id)}"
+    return f"New storage item: {str(new_item.inserted_id)}"
 
 def add_bank_charge(
     transactions: Collection,
     transaction_date: str,
     amount: float
 ) -> str:
+    if not transaction_date or not amount:
+        return "Missing key data"
+
     new_item = transactions.insert_one(
         {
             'Reference': vpt.get_new_ref(transactions, SEASON),
@@ -157,4 +194,4 @@ def add_bank_charge(
         }
     )
 
-    return f"Bank Charge: New bank charge: {str(new_item.inserted_id)}"
+    return f"New bank charge: {str(new_item.inserted_id)}"
