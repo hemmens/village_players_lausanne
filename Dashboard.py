@@ -117,8 +117,23 @@ transaction_tabs = {
     # },
 }
 
+main_tabs = {
+    'transactions': 'Insert New Transactions',
+    'insert-records': 'Insert New Record',
+    # 'update-records': 'Update a Record',
+    # 'find-records': 'Find Records',
+}
+
 app_layout = [
     html.H1('Village Players Database'),
+    dcc.Tabs(
+        id='main-tabs', value=list(main_tabs.keys())[0], children=[
+            dcc.Tab(label=label, value=value) for value, label in main_tabs.items()
+        ]
+    )
+]
+
+transaction_section = [
     html.H2('Add New Transaction: '),
     dcc.Tabs(
         id='t-tabs', value=list(transaction_tabs.keys())[0], children=[
@@ -129,7 +144,7 @@ app_layout = [
 ]
 
 for field, layout in transaction_fields.items():
-    app_layout.append(
+    transaction_section.append(
         html.Div([
             field[2:].replace('-', ' ').title() + ": ",
             (
@@ -147,38 +162,54 @@ for field, layout in transaction_fields.items():
         ],
         id=f'div-{field}')
     )
-app_layout.append(html.Div(id='t-returned'))
+transaction_section.append(html.Div(id='t-returned'))
 
-app_layout.append(html.H2('Add New Database Entry: '))
 app_layout.append(
-    dcc.Tabs(
-        id='a-tabs', value='a-tab-balance', children=[
-            dcc.Tab(label="Add New Balance", value='a-tab-balance')
-        ]
+    html.Div(
+        transaction_section,
+        id='section-transactions',
+        hidden=False
     )
 )
+
 app_layout.append(
-    html.Div([
-        "Amount: ",
-        dcc.Input(id='a-balance-amount', type='number'),
-        "Month: ",
-        dcc.Input(
-            id='a-balance-month', type='number',
-            value=(datetime.today().date().replace(day=1) - timedelta(1)).month
-        ),
-        "Year: ",
-        dcc.Input(
-            id='a-balance-year', type='number',
-            value=(datetime.today().date().replace(day=1) - timedelta(1)).year
-        ),
-    ],
-    id='a-balance', hidden=False)
+    html.Div(
+        [
+            html.H2('Add New Database Entry: '),
+            dcc.Tabs(
+                id='a-tabs', value='a-tab-balance', children=[
+                    dcc.Tab(label="Add New Balance", value='a-tab-balance')
+                ]
+            ),
+            html.Div(
+                [
+                    "Amount: ",
+                    dcc.Input(id='a-balance-amount', type='number'),
+                    "Month: ",
+                    dcc.Input(
+                        id='a-balance-month', type='number',
+                        value=(datetime.today().date().replace(day=1) - timedelta(1)).month
+                    ),
+                    "Year: ",
+                    dcc.Input(
+                        id='a-balance-year', type='number',
+                        value=(datetime.today().date().replace(day=1) - timedelta(1)).year
+                    ),
+                ],
+                id='a-balance',
+                hidden=False
+            ),
+            html.Div([
+                "Verify: ",
+                dcc.Dropdown(id='a-verify', options=VERIFICATION, value=False),
+            ]),
+            html.Div(id='a-returned')
+        ],
+        id='section-insert-records',
+        hidden=True
+    )
 )
-app_layout.append(html.Div([
-    "Verify: ",
-    dcc.Dropdown(id='a-verify', options=VERIFICATION, value=False),
-]))
-app_layout.append(html.Div(id='a-returned'))
+
 
 # app_layout.append(
 #     html.Div([
@@ -199,6 +230,17 @@ app_layout.append(html.Div(id='a-returned'))
 app = Dash(__name__)
 
 app.layout = html.Div(app_layout)
+
+def switch_main_tab(section: str):
+    @callback(
+        Output(f'section-{section}', 'hidden'),
+        Input('main-tabs', 'value')
+    )
+    def show_main_tab(tab: str) -> bool:
+        return tab != section
+
+for tab in main_tabs.keys():
+    switch_main_tab(tab)
 
 def falsify_on_tab_switch(prefix: str):
     @callback(
