@@ -31,6 +31,12 @@ SEASONS = [
     '2025-26',
     '2026-27',
 ]
+GENDERS = [
+    'Male',
+    'Female',
+    'Non-Binary',
+    'Prefer not to say',
+]
 BANK_CHARGE=-5
 NOT_OK = 'waiting'
 OK = 'SUBMIT'
