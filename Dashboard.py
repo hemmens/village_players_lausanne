@@ -5,7 +5,10 @@ from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 import dash_ag_grid as dag
 
-from config import BANK_CHARGE, MEMBER_TYPES, NOT_OK, OK, SEASONS, STORAGE_COST, STORAGE_OWNER, TRANS_TYPES, URI
+from config import (
+    BANK_CHARGE, GENDERS, MEMBER_TYPES, NOT_OK, OK, ROLE_TYPES, SEASONS,
+    STORAGE_COST, STORAGE_OWNER, TRANS_TYPES, URI
+)
 import add_vpdata as avp
 import find_vpdata as fvp
 import transaction_vpdata as tvp
@@ -20,24 +23,27 @@ NAMES = [
     }
     for x in db.people.find({})
 ]
+FESTIVALS = [
+    {'label': x['title'], 'value': str(x['_id'])} for x in db.festivals.find({})
+]
 PRODUCTIONS = vpt.get_productions_list(db.productions, db.festivals)
 VERIFICATION = [
     {'label': OK, 'value': True},
     {'label': NOT_OK, 'value': False},
 ]
 transaction_fields = {
-    't-transaction-type': {'type': 'dropdown', 'options': TRANS_TYPES},
-    't-membership-type': {'type': 'dropdown', 'options': MEMBER_TYPES},
+    't-transaction-type': {'type': 'dropdown', 'options': [''] + TRANS_TYPES},
+    't-membership-type': {'type': 'dropdown', 'options': [''] + MEMBER_TYPES},
     't-date': {'type': 'date'},
     't-amount': {'type': 'number'},
     't-description': {'type': 'text'},
-    't-recipient': {'type': 'dropdown', 'options': NAMES},
+    't-recipient': {'type': 'dropdown', 'options': [''] + NAMES},
     't-recipient-text': {'type': 'text'},
     't-member': {'type': 'dropdown-multi', 'options': NAMES},
     't-member-1': {'type': 'text'},
     't-member-2': {'type': 'text'},
     't-member-3': {'type': 'text'},
-    't-production': {'type': 'dropdown', 'options': PRODUCTIONS},
+    't-production': {'type': 'dropdown', 'options': [''] + PRODUCTIONS},
     # 'season': {'type': 'dropdown-multi', 'options': SEASONS},
     # 'membership-type-find': {'type': 'dropdown-multi', 'options': MEMBER_TYPES},
     't-verify': {'type': 'dropdown', 'options': VERIFICATION},
@@ -172,13 +178,22 @@ app_layout.append(
     )
 )
 
+non_transaction_tabs = {
+    'a': ['balance', 'festival', 'production', 'cast-crew', 'committee', 'person'],
+}
+
 app_layout.append(
     html.Div(
         [
             html.H2('Add New Database Entry: '),
             dcc.Tabs(
                 id='a-tabs', value='a-tab-balance', children=[
-                    dcc.Tab(label="Add New Balance", value='a-tab-balance')
+                    dcc.Tab(label="Add New Balance", value='a-tab-balance'),
+                    dcc.Tab(label="Add New Festival", value='a-tab-festival'),
+                    dcc.Tab(label="Add New Production", value='a-tab-production'),
+                    dcc.Tab(label="Add New Cast or Crew Member", value='a-tab-cast-crew'),
+                    dcc.Tab(label="Add New Committee Member", value='a-tab-committee'),
+                    dcc.Tab(label="Add New Person", value='a-tab-person')
                 ]
             ),
             html.Div(
@@ -198,6 +213,94 @@ app_layout.append(
                 ],
                 id='a-balance',
                 hidden=False
+            ),
+            html.Div(
+                [
+                    "Name: ",
+                    dcc.Input(id='a-festival-name', type='text'),
+                    "Venue: ",
+                    dcc.Input(id='a-festival-venue', type='text'),
+                    "Open Date: ",
+                    dcc.DatePickerSingle(id='a-festival-open'),
+                    "Close Date: ",
+                    dcc.DatePickerSingle(id='a-festival-close'),
+                ],
+                id='a-festival',
+                hidden=True
+            ),
+            html.Div(
+                [
+                    "Name: ",
+                    dcc.Input(id='a-production-name', type='text'),
+                    "Venue: ",
+                    dcc.Input(id='a-production-venue', type='text'),
+                    "Open Date: ",
+                    dcc.DatePickerSingle(id='a-production-open'),
+                    "Close Date: ",
+                    dcc.DatePickerSingle(id='a-production-close'),
+                    "Festival: ",
+                    dcc.Dropdown(id='a-production-festival', options=[''] + FESTIVALS),
+                ],
+                id='a-production',
+                hidden=True
+            ),
+            html.Div(
+                [
+                    "Person: ",
+                    dcc.Dropdown(id='a-cast-crew-person', options=NAMES),
+                    "Production: ",
+                    dcc.Dropdown(id='a-cast-crew-production', options=PRODUCTIONS),
+                    "Role: ",
+                    dcc.Dropdown(id='a-cast-crew-role', options=[''] + ROLE_TYPES),
+                    "Role Name: ",
+                    dcc.Input(id='a-cast-crew-role-name', type='text'),
+                ],
+                id='a-cast-crew',
+                hidden=True
+            ),
+            html.Div(
+                [
+                    "Person: ",
+                    dcc.Dropdown(id='a-committee-person', options=NAMES),
+                    "Season: ",
+                    dcc.Dropdown(id='a-committee-season', options=SEASONS),
+                    "Position: ",
+                    dcc.Input(id='a-committee-position', type='text'),
+                ],
+                id='a-committee',
+                hidden=True
+            ),
+            html.Div(
+                [
+                    "First Name: ",
+                    dcc.Input(id='a-person-first-name', type='text'),
+                    "Surname: ",
+                    dcc.Input(id='a-person-surname', type='text'),
+                    "Address (first line): ",
+                    dcc.Input(id='a-person-address', type='text'),
+                    "Postcode (including town): ",
+                    dcc.Input(id='a-person-postcode', type='text'),
+                    "Address is Private: ",
+                    dcc.Dropdown(id='a-person-address-private', options=[True, False], value=True),
+                    "Home Phone: ",
+                    dcc.Input(id='a-person-home-phone', type='text'),
+                    "Home Phone is Private: ",
+                    dcc.Dropdown(id='a-person-home-phone-private', options=[True, False], value=True),
+                    "Mobile: ",
+                    dcc.Input(id='a-person-mobile', type='text'),
+                    "Mobile is Private: ",
+                    dcc.Dropdown(id='a-person-mobile-private', options=[True, False], value=True),
+                    "Email: ",
+                    dcc.Input(id='a-person-email', type='text'),
+                    "Email is Private: ",
+                    dcc.Dropdown(id='a-person-email-private', options=[True, False], value=True),
+                    "Gender: ",
+                    dcc.Dropdown(id='a-person-gender', options=[''] + GENDERS),
+                    "GDPR Signed On: ",
+                    dcc.DatePickerSingle(id='a-person-gdpr'),
+                ],
+                id='a-person',
+                hidden=True
             ),
             html.Div([
                 "Verify: ",
@@ -242,7 +345,7 @@ def switch_main_tab(section: str):
 for tab in main_tabs.keys():
     switch_main_tab(tab)
 
-def falsify_on_tab_switch(prefix: str):
+def unverify_on_tab_switch(prefix: str):
     @callback(
         Output(f'{prefix}-verify', 'value'),
         Input(f'{prefix}-tabs', 'value')
@@ -251,9 +354,9 @@ def falsify_on_tab_switch(prefix: str):
         return False
 
 for prefix in ['t', 'a']:
-    falsify_on_tab_switch(prefix)
+    unverify_on_tab_switch(prefix)
 
-def update_div(field):
+def update_transaction_div(field):
     @callback(
         Output(f'div-{field}', 'hidden'),
         Input('t-tabs', 'value')
@@ -270,7 +373,21 @@ def update_div(field):
 
 for field in transaction_fields.keys():
     if field != 't-verify':
-        update_div(field)
+        update_transaction_div(field)
+
+def update_tab_in_other_sections(prefix: str, tab: str):
+    @callback(
+        Output(f'{prefix}-{tab}', 'hidden'),
+        Input(f'{prefix}-tabs', 'value')
+    )
+    def hide_tab(section_tab: str):
+        section_tab = section_tab[2:].replace('tab-', '')
+        return tab != section_tab
+
+for prefix, tabs in non_transaction_tabs.items():
+    for tab in tabs:
+        update_tab_in_other_sections(prefix, tab)
+
 
 # @callback(
 #     Output('dataframe', 'columnDefs'),
