@@ -493,13 +493,14 @@ app_layout.append(
             ),
             html.Div([
                 "Update: ",
-                dcc.Dropdown(id='u-verify', options=VERIFICATION, value=False),
+                dcc.Dropdown(id='u-update', options=VERIFICATION, value=False)
             ]),
             html.Div([
                 "Delete: ",
-                dcc.Dropdown(id='u-delete', options=VERIFICATION, value=False),
+                dcc.Dropdown(id='u-delete', options=VERIFICATION, value=False)
             ]),
-            html.Div(id='u-returned')
+            html.Div(id='u-updated'),
+            html.Div(id='u-deleted', hidden=True)
         ],
         id='section-update-records',
         hidden=True
@@ -548,6 +549,20 @@ def unverify_on_tab_switch(prefix: str):
 
 for prefix in ['t', 'a']:
     unverify_on_tab_switch(prefix)
+
+@callback(
+    Output('u-update', 'value'),
+    Input('u-tabs', 'value')
+)
+def update_falsification(tab: str):
+    return False
+
+@callback(
+    Output('u-delete', 'value'),
+    Input('u-tabs', 'value')
+)
+def delete_falsification(tab: str):
+    return False
 
 def update_transaction_div(field):
     @callback(
@@ -827,8 +842,8 @@ def return_status_add(
     return vpt.handle_status_message(tab, "Verified!")
 
 @callback(
-    Output('u-returned', 'children'),
-    Input('u-verify', 'value'),
+    Output('u-updated', 'children'),
+    Input('u-update', 'value'),
     State('u-tabs', 'value'),
     State('u-balance-select', 'value'),
     State('u-balance-amount', 'value'),
@@ -930,13 +945,23 @@ def return_status_update(
     return vpt.handle_status_message(tab, "Verified!")
 
 @callback(
-    Output('u-returned', 'children'),
+    Output('u-deleted', 'hidden'),
+    Input('u-delete', 'value')
+)
+def hide_delete_status(
+    verified: bool
+) -> bool:
+    return not verified
+
+@callback(
+    Output('u-deleted', 'children'),
     Input('u-delete', 'value'),
     State('u-tabs', 'value'),
     State('u-balance-select', 'value'),
     State('u-festival-select', 'value'),
     State('u-production-select', 'value'),
     State('u-cast-crew-select', 'value'),
+    State('u-committee-select', 'value'),
     State('u-person-select', 'value')
 )
 def return_status_delete(
