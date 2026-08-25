@@ -63,23 +63,23 @@ def add_production(
     close: str | None,
     festival: str | None
 ) -> str:
-    if not title or not open:
+    if not title or (not open and not festival):
         return "Missing key data"
 
-    if productions.find_one({'title': title}):
-        return "Production name already exists"
-
     production_payload = {
-        'title': title,
-        'open_date': vpt.convert_date(open),
+        'title': title
     }
 
-    if venue: 
-        production_payload['venue'] = venue
-    if close:
-        production_payload['close_date'] = vpt.convert_date(close)
+    if productions.find_one(production_payload):
+        return "Production name already exists"
+
     if festival:
         production_payload['festival'] = ObjectId(festival)
+    else:
+        if venue: 
+            production_payload['venue'] = venue
+        if close:
+            production_payload['close_date'] = vpt.convert_date(close)
 
     new_production = productions.insert_one(production_payload)
 

@@ -742,9 +742,9 @@ def return_status_transaction(
 def return_status_add(
     verified: bool,
     tab: str,
-    amount: float | None,
-    month: int | None,
-    year: int | None,
+    balance_amount: float | None,
+    balance_month: int | None,
+    balance_year: int | None,
     festival_name: str | None,
     festival_venue: str | None,
     festival_open: str | None,
@@ -785,7 +785,7 @@ def return_status_add(
     if tab == 'a-tab-balance':
         return vpt.handle_status_message(
             tab, avp.add_balance(
-                db.balance, amount, month, year
+                db.balance, balance_amount, balance_month, balance_year
             )
         )
     elif tab == 'a-tab-festival':
@@ -822,6 +822,178 @@ def return_status_add(
                 person_gender, person_gdpr
             )
         )
+
+    return vpt.handle_status_message(tab, "Verified!")
+
+@callback(
+    Output('u-returned', 'children'),
+    Input('u-verify', 'value'),
+    State('u-tabs', 'value'),
+    State('u-balance-select', 'value'),
+    State('u-balance-amount', 'value'),
+    State('u-festival-select', 'value'),
+    State('u-festival-venue', 'value'),
+    State('u-festival-open', 'date'),
+    State('u-festival-close', 'date'),
+    State('u-production-select', 'value'),
+    State('u-production-venue', 'value'),
+    State('u-production-open', 'date'),
+    State('u-production-close', 'date'),
+    State('u-production-festival', 'value'),
+    State('u-cast-crew-select', 'value'),
+    State('u-cast-crew-role-name', 'value'),
+    State('u-person-select', 'value'),
+    State('u-person-address', 'value'),
+    State('u-person-postcode', 'value'),
+    State('u-person-address-private', 'value'),
+    State('u-person-home-phone', 'value'),
+    State('u-person-home-phone-private', 'value'),
+    State('u-person-mobile', 'value'),
+    State('u-person-mobile-private', 'value'),
+    State('u-person-email', 'value'),
+    State('u-person-email-private', 'value'),
+    State('u-person-gender', 'value'),
+    State('u-person-gdpr', 'date')
+)
+def return_status_update(
+    verified: bool,
+    tab: str,
+    balance_id: str | None,
+    balance_amount: float | None,
+    festival_id: str | None,
+    festival_venue: str | None,
+    festival_open: str | None,
+    festival_close: str | None,
+    production_id: str | None,
+    production_venue: str | None,
+    production_open: str | None,
+    production_close: str | None,
+    production_festival: str | None,
+    cast_id: str | None,
+    cast_name: str | None,
+    person_id: str | None,
+    person_address: str | None,
+    person_postcode: str | None,
+    person_address_private: bool | None,
+    person_phone: str | None,
+    person_phone_private: bool | None,
+    person_mobile: str | None,
+    person_mobile_private: bool | None,
+    person_email: str | None,
+    person_email_private: bool | None,
+    person_gender: str | None,
+    person_gdpr: str | None
+) -> str:
+    if not verified:
+        try:
+            client.admin.command('ping')
+            return vpt.handle_status_message(tab, "Ping successful!")
+        except Exception as e:
+            return vpt.handle_status_message(tab, e)
+
+    # if tab == 'u-tab-balance':
+    #     return vpt.handle_status_message(
+    #         tab, avp.add_balance(
+    #             db.balance, amount, month, year
+    #         )
+    #     )
+    # elif tab == 'u-tab-festival':
+    #     return vpt.handle_status_message(
+    #         tab, avp.add_festival(
+    #             db.festivals, festival_name, festival_venue, festival_open, festival_close
+    #         )
+    #     )
+    # elif tab == 'u-tab-production':
+    #     return vpt.handle_status_message(
+    #         tab, avp.add_production(
+    #             db.productions, production_name, production_venue, production_open,
+    #             production_close, production_festival
+    #         )
+    #     )
+    # elif tab == 'u-tab-cast-crew':
+    #     return vpt.handle_status_message(
+    #         tab, avp.add_cast_crew(
+    #             db.castcrew, cast_person.split('|')[0], cast_production, cast_role, cast_name
+    #         )
+    #     )
+    # elif tab == 'u-tab-person':
+    #     return vpt.handle_status_message(
+    #         tab, avp.add_person(
+    #             db.people, person_first_name, person_surname, person_address, person_postcode,
+    #             person_address_private, person_phone, person_phone_private,
+    #             person_mobile, person_mobile_private, person_email, person_email_private,
+    #             person_gender, person_gdpr
+    #         )
+    #     )
+
+    return vpt.handle_status_message(tab, "Verified!")
+
+@callback(
+    Output('u-returned', 'children'),
+    Input('u-delete', 'value'),
+    State('u-tabs', 'value'),
+    State('u-balance-select', 'value'),
+    State('u-festival-select', 'value'),
+    State('u-production-select', 'value'),
+    State('u-cast-crew-select', 'value'),
+    State('u-person-select', 'value')
+)
+def return_status_delete(
+    verified: bool,
+    tab: str,
+    balance_id: str | None,
+    festival_id: str | None,
+    production_id: str | None,
+    cast_id: str | None,
+    person_id: str | None
+) -> str:
+    if not verified:
+        try:
+            client.admin.command('ping')
+            return vpt.handle_status_message(tab, "Ping successful!")
+        except Exception as e:
+            return vpt.handle_status_message(tab, e)
+
+    # if tab == 'u-tab-balance':
+    #     return vpt.handle_status_message(
+    #         tab, avp.add_balance(
+    #             db.balance, amount, month, year
+    #         )
+    #     )
+    # elif tab == 'u-tab-festival':
+    #     return vpt.handle_status_message(
+    #         tab, avp.add_festival(
+    #             db.festivals, festival_name, festival_venue, festival_open, festival_close
+    #         )
+    #     )
+    # elif tab == 'u-tab-production':
+    #     return vpt.handle_status_message(
+    #         tab, avp.add_production(
+    #             db.productions, production_name, production_venue, production_open,
+    #             production_close, production_festival
+    #         )
+    #     )
+    # elif tab == 'u-tab-cast-crew':
+    #     return vpt.handle_status_message(
+    #         tab, avp.add_cast_crew(
+    #             db.castcrew, cast_person.split('|')[0], cast_production, cast_role, cast_name
+    #         )
+    #     )
+    # elif tab == 'u-tab-committee':
+    #     return vpt.handle_status_message(
+    #         tab, avp.add_committee(
+    #             db.committee, committee_person.split('|')[0], committee_season, committee_position
+    #         )
+    #     )
+    # elif tab == 'u-tab-person':
+    #     return vpt.handle_status_message(
+    #         tab, avp.add_person(
+    #             db.people, person_first_name, person_surname, person_address, person_postcode,
+    #             person_address_private, person_phone, person_phone_private,
+    #             person_mobile, person_mobile_private, person_email, person_email_private,
+    #             person_gender, person_gdpr
+    #         )
+    #     )
 
     return vpt.handle_status_message(tab, "Verified!")
 
