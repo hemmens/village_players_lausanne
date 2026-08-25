@@ -14,6 +14,7 @@ from config import (
 import add_vpdata as avp
 import find_vpdata as fvp
 import transaction_vpdata as tvp
+import update_vpdata as uvp
 import vp_tools as vpt
 
 client = MongoClient(URI, server_api=ServerApi('1'))
@@ -891,40 +892,40 @@ def return_status_update(
         except Exception as e:
             return vpt.handle_status_message(tab, e)
 
-    # if tab == 'u-tab-balance':
-    #     return vpt.handle_status_message(
-    #         tab, avp.add_balance(
-    #             db.balance, amount, month, year
-    #         )
-    #     )
-    # elif tab == 'u-tab-festival':
-    #     return vpt.handle_status_message(
-    #         tab, avp.add_festival(
-    #             db.festivals, festival_name, festival_venue, festival_open, festival_close
-    #         )
-    #     )
-    # elif tab == 'u-tab-production':
-    #     return vpt.handle_status_message(
-    #         tab, avp.add_production(
-    #             db.productions, production_name, production_venue, production_open,
-    #             production_close, production_festival
-    #         )
-    #     )
-    # elif tab == 'u-tab-cast-crew':
-    #     return vpt.handle_status_message(
-    #         tab, avp.add_cast_crew(
-    #             db.castcrew, cast_person.split('|')[0], cast_production, cast_role, cast_name
-    #         )
-    #     )
-    # elif tab == 'u-tab-person':
-    #     return vpt.handle_status_message(
-    #         tab, avp.add_person(
-    #             db.people, person_first_name, person_surname, person_address, person_postcode,
-    #             person_address_private, person_phone, person_phone_private,
-    #             person_mobile, person_mobile_private, person_email, person_email_private,
-    #             person_gender, person_gdpr
-    #         )
-    #     )
+    if tab == 'u-tab-balance':
+        return vpt.handle_status_message(
+            tab, uvp.update_balance(
+                db.balance, balance_id, balance_amount
+            )
+        )
+    elif tab == 'u-tab-festival':
+        return vpt.handle_status_message(
+            tab, uvp.update_festival(
+                db.festivals, festival_id, festival_venue, festival_open, festival_close
+            )
+        )
+    elif tab == 'u-tab-production':
+        return vpt.handle_status_message(
+            tab, uvp.update_production(
+                db.productions, production_id, production_venue, production_open,
+                production_close, production_festival
+            )
+        )
+    elif tab == 'u-tab-cast-crew':
+        return vpt.handle_status_message(
+            tab, uvp.update_cast_crew(
+                db.castcrew, cast_id, cast_name
+            )
+        )
+    elif tab == 'u-tab-person':
+        return vpt.handle_status_message(
+            tab, uvp.update_person(
+                db.people, person_id, person_address, person_postcode,
+                person_address_private, person_phone, person_phone_private,
+                person_mobile, person_mobile_private, person_email, person_email_private,
+                person_gender, person_gdpr
+            )
+        )
 
     return vpt.handle_status_message(tab, "Verified!")
 
@@ -945,6 +946,7 @@ def return_status_delete(
     festival_id: str | None,
     production_id: str | None,
     cast_id: str | None,
+    committee_id: str | None,
     person_id: str | None
 ) -> str:
     if not verified:
@@ -954,46 +956,30 @@ def return_status_delete(
         except Exception as e:
             return vpt.handle_status_message(tab, e)
 
-    # if tab == 'u-tab-balance':
-    #     return vpt.handle_status_message(
-    #         tab, avp.add_balance(
-    #             db.balance, amount, month, year
-    #         )
-    #     )
-    # elif tab == 'u-tab-festival':
-    #     return vpt.handle_status_message(
-    #         tab, avp.add_festival(
-    #             db.festivals, festival_name, festival_venue, festival_open, festival_close
-    #         )
-    #     )
-    # elif tab == 'u-tab-production':
-    #     return vpt.handle_status_message(
-    #         tab, avp.add_production(
-    #             db.productions, production_name, production_venue, production_open,
-    #             production_close, production_festival
-    #         )
-    #     )
-    # elif tab == 'u-tab-cast-crew':
-    #     return vpt.handle_status_message(
-    #         tab, avp.add_cast_crew(
-    #             db.castcrew, cast_person.split('|')[0], cast_production, cast_role, cast_name
-    #         )
-    #     )
-    # elif tab == 'u-tab-committee':
-    #     return vpt.handle_status_message(
-    #         tab, avp.add_committee(
-    #             db.committee, committee_person.split('|')[0], committee_season, committee_position
-    #         )
-    #     )
-    # elif tab == 'u-tab-person':
-    #     return vpt.handle_status_message(
-    #         tab, avp.add_person(
-    #             db.people, person_first_name, person_surname, person_address, person_postcode,
-    #             person_address_private, person_phone, person_phone_private,
-    #             person_mobile, person_mobile_private, person_email, person_email_private,
-    #             person_gender, person_gdpr
-    #         )
-    #     )
+    if tab == 'u-tab-balance':
+        return vpt.handle_status_message(
+            tab, uvp.delete_record(db.balance, balance_id)
+        )
+    elif tab == 'u-tab-festival':
+        return vpt.handle_status_message(
+            tab, uvp.delete_record(db.festivals, festival_id)
+        )
+    elif tab == 'u-tab-production':
+        return vpt.handle_status_message(
+            tab, uvp.delete_record(db.productions, production_id)
+        )
+    elif tab == 'u-tab-cast-crew':
+        return vpt.handle_status_message(
+            tab, uvp.delete_record(db.castcrew, cast_id)
+        )
+    elif tab == 'u-tab-committee':
+        return vpt.handle_status_message(
+            tab, uvp.delete_record(db.committee, committee_id)
+        )
+    elif tab == 'u-tab-person':
+        return vpt.handle_status_message(
+            tab, uvp.delete_record(db.people, person_id)
+        )
 
     return vpt.handle_status_message(tab, "Verified!")
 
