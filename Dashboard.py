@@ -477,14 +477,72 @@ def return_status_transaction(
     State('a-tabs', 'value'),
     State('a-balance-amount', 'value'),
     State('a-balance-month', 'value'),
-    State('a-balance-year', 'value')
+    State('a-balance-year', 'value'),
+    State('a-festival-name', 'value'),
+    State('a-festival-venue', 'value'),
+    State('a-festival-open', 'date'),
+    State('a-festival-close', 'date'),
+    State('a-production-name', 'value'),
+    State('a-production-venue', 'value'),
+    State('a-production-open', 'date'),
+    State('a-production-close', 'date'),
+    State('a-production-festival', 'value'),
+    State('a-cast-crew-person', 'value'),
+    State('a-cast-crew-production', 'value'),
+    State('a-cast-crew-role', 'value'),
+    State('a-cast-crew-role-name', 'value'),
+    State('a-committee-person', 'value'),
+    State('a-committee-season', 'value'),
+    State('a-committee-position', 'value'),
+    State('a-person-first-name', 'value'),
+    State('a-person-surname', 'value'),
+    State('a-person-address', 'value'),
+    State('a-person-postcode', 'value'),
+    State('a-person-address-private', 'value'),
+    State('a-person-home-phone', 'value'),
+    State('a-person-home-phone-private', 'value'),
+    State('a-person-mobile', 'value'),
+    State('a-person-mobile-private', 'value'),
+    State('a-person-email', 'value'),
+    State('a-person-email-private', 'value'),
+    State('a-person-gender', 'value'),
+    State('a-person-gdpr', 'date')
 )
 def return_status_add(
     verified: bool,
     tab: str,
     amount: float | None,
     month: int | None,
-    year: int | None
+    year: int | None,
+    festival_name: str | None,
+    festival_venue: str | None,
+    festival_open: str | None,
+    festival_close: str | None,
+    production_name: str | None,
+    production_venue: str | None,
+    production_open: str | None,
+    production_close: str | None,
+    production_festival: str | None,
+    cast_person: str | None,
+    cast_production: str | None,
+    cast_role: str | None,
+    cast_name: str | None,
+    committee_person: str | None,
+    committee_season: str | None,
+    committee_position: str | None,
+    person_first_name: str | None,
+    person_surname: str | None,
+    person_address: str | None,
+    person_postcode: str | None,
+    person_address_private: bool | None,
+    person_phone: str | None,
+    person_phone_private: bool | None,
+    person_mobile: str | None,
+    person_mobile_private: bool | None,
+    person_email: str | None,
+    person_email_private: bool | None,
+    person_gender: str | None,
+    person_gdpr: str | None
 ) -> str:
     if not verified:
         try:
@@ -497,6 +555,40 @@ def return_status_add(
         return vpt.handle_status_message(
             tab, avp.add_balance(
                 db.balance, amount, month, year
+            )
+        )
+    elif tab == 'a-tab-festival':
+        return vpt.handle_status_message(
+            tab, avp.add_festival(
+                db.festivals, festival_name, festival_venue, festival_open, festival_close
+            )
+        )
+    elif tab == 'a-tab-production':
+        return vpt.handle_status_message(
+            tab, avp.add_production(
+                db.productions, production_name, production_venue, production_open,
+                production_close, production_festival
+            )
+        )
+    elif tab == 'a-tab-cast-crew':
+        return vpt.handle_status_message(
+            tab, avp.add_cast_crew(
+                db.castcrew, cast_person.split('|')[0], cast_production, cast_role, cast_name
+            )
+        )
+    elif tab == 'a-tab-committee':
+        return vpt.handle_status_message(
+            tab, avp.add_committee(
+                db.committee, committee_person.split('|')[0], committee_season, committee_position
+            )
+        )
+    elif tab == 'a-tab-person':
+        return vpt.handle_status_message(
+            tab, avp.add_person(
+                db.people, person_first_name, person_surname, person_address, person_postcode,
+                person_address_private, person_phone, person_phone_private,
+                person_mobile, person_mobile_private, person_email, person_email_private,
+                person_gender, person_gdpr
             )
         )
 

@@ -73,8 +73,9 @@ def get_productions_list(
         pd.DataFrame.from_dict(ps, orient='index')
     ])
     shows.sort_values('date', ascending=False, inplace=True)
+    shows.reset_index(inplace=True, names='db_id')
     shows['label'] = shows.apply(
-        lambda row: {'label': f"{row.title} ({row.date.year})", 'value': row.index}, axis=1
+        lambda row: {'label': f"{row.title} ({row.date.year})", 'value': row.db_id}, axis=1
     )
 
     return shows['label'].to_list()
