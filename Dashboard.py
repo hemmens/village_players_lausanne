@@ -1,5 +1,7 @@
 from datetime import datetime, timedelta
 
+from bson.decimal128 import Decimal128
+from bson.objectid import ObjectId
 from dash import Dash, html, dcc, callback, Output, Input, State
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
@@ -125,13 +127,13 @@ transaction_tabs = {
 
 main_tabs = {
     'transactions': 'Insert New Transactions',
-    'insert-records': 'Insert New Record',
-    # 'update-records': 'Update a Record',
+    'insert-records': 'Insert a New Record',
+    'update-records': 'Update a Record',
     # 'find-records': 'Find Records',
 }
 
 app_layout = [
-    html.H1('Village Players Database'),
+    html.H1('Village Players Database Interface'),
     dcc.Tabs(
         id='main-tabs', value=list(main_tabs.keys())[0], children=[
             dcc.Tab(label=label, value=value) for value, label in main_tabs.items()
@@ -180,6 +182,30 @@ app_layout.append(
 
 non_transaction_tabs = {
     'a': ['balance', 'festival', 'production', 'cast-crew', 'committee', 'person'],
+    'u': ['balance', 'festival', 'production', 'cast-crew', 'committee', 'person'],
+}
+update_fields = {
+    'balance': {'collection': db.balance, 'value': {'amount': 'balance'}, 'date': []},
+    'festival': {
+        'collection': db.festivals, 'value': {'venue': 'venue'},
+        'date': {'open': 'open_date', 'close': 'close_date'}
+    },
+    'production': {
+        'collection': db.productions,'value': {'venue': 'venue', 'festival': 'festival'},
+        'date': {'open': 'open_date', 'close': 'close_date'}
+    },
+    'cast-crew': {'collection': db.castcrew, 'value': {'role-name': 'role_name'}, 'date': []},
+    'committee': {'collection': db.committee,'value': {}, 'date': {}},
+    'person': {
+        'collection': db.people,
+        'value': {
+            'address': 'address', 'postcode': 'postcode', 'address-private': 'address_private',
+            'home-phone': 'home_phone', 'home-phone-private': 'home_phone_private',
+            'mobile': 'mobile', 'mobile-private': 'mobile_private', 'email': 'email',
+            'email-private': 'email_private', 'gender': 'gender'
+        },
+        'date': {'gdpr': 'gdpr'},
+    }
 }
 
 app_layout.append(
@@ -193,7 +219,7 @@ app_layout.append(
                     dcc.Tab(label="Add New Production", value='a-tab-production'),
                     dcc.Tab(label="Add New Cast or Crew Member", value='a-tab-cast-crew'),
                     dcc.Tab(label="Add New Committee Member", value='a-tab-committee'),
-                    dcc.Tab(label="Add New Person", value='a-tab-person')
+                    dcc.Tab(label="Add New Person", value='a-tab-person'),
                 ]
             ),
             html.Div(
@@ -251,7 +277,10 @@ app_layout.append(
                     "Production: ",
                     dcc.Dropdown(id='a-cast-crew-production', options=PRODUCTIONS),
                     "Role: ",
-                    dcc.Dropdown(id='a-cast-crew-role', options=[''] + ROLE_TYPES),
+                    dcc.Dropdown(
+                        id='a-cast-crew-role',
+                        options=[''] + [{'label': x, 'value': x.lower()} for x in ROLE_TYPES]
+                    ),
                     "Role Name: ",
                     dcc.Input(id='a-cast-crew-role-name', type='text'),
                 ],
@@ -295,7 +324,10 @@ app_layout.append(
                     "Email is Private: ",
                     dcc.Dropdown(id='a-person-email-private', options=[True, False], value=True),
                     "Gender: ",
-                    dcc.Dropdown(id='a-person-gender', options=[''] + GENDERS),
+                    dcc.Dropdown(
+                        id='a-person-gender',
+                        options=[''] + [{'label': x, 'value': x.lower()} for x in GENDERS]
+                    ),
                     "GDPR Signed On: ",
                     dcc.DatePickerSingle(id='a-person-gdpr'),
                 ],
@@ -309,6 +341,166 @@ app_layout.append(
             html.Div(id='a-returned')
         ],
         id='section-insert-records',
+        hidden=True
+    )
+)
+
+app_layout.append(
+    html.Div(
+        [
+            html.H2('Update Database Entry: '),
+            dcc.Tabs(
+                id='u-tabs', value='u-tab-balance', children=[
+                    dcc.Tab(label="Update Balance", value='u-tab-balance'),
+                    dcc.Tab(label="Update Festival", value='u-tab-festival'),
+                    dcc.Tab(label="Update Production", value='u-tab-production'),
+                    dcc.Tab(label="Update Cast or Crew Member", value='u-tab-cast-crew'),
+                    dcc.Tab(label="Update Committee Member", value='u-tab-committee'),
+                    dcc.Tab(label="Update Person", value='u-tab-person'),
+                    # dcc.Tab(label="Update Transaction", value='u-tab-transaction'),
+                    # dcc.Tab(label="Update Member", value='u-tab-member'),
+                ]
+            ),
+            html.Div(
+                [
+                    "Select Entry: ",
+                    dcc.Dropdown(id='u-balance-select', options=[
+                        {
+                            'label': entry['date'].strftime("%B %Y"),
+                            'value': str(entry['_id']),
+                        }
+                        for entry in db.balance.find({})
+                    ]),
+                    "Amount: ",
+                    dcc.Input(id='u-balance-amount', type='number'),
+                ],
+                id='u-balance',
+                hidden=False
+            ),
+            html.Div(
+                [
+                    "Select Entry: ",
+                    dcc.Dropdown(id='u-festival-select', options=[
+                        {
+                            'label': entry['title'],
+                            'value': str(entry['_id']),
+                        }
+                        for entry in db.festivals.find({})
+                    ]),
+                    "Venue: ",
+                    dcc.Input(id='u-festival-venue', type='text'),
+                    "Open Date: ",
+                    dcc.DatePickerSingle(id='u-festival-open'),
+                    "Close Date: ",
+                    dcc.DatePickerSingle(id='u-festival-close'),
+                ],
+                id='u-festival',
+                hidden=True
+            ),
+            html.Div(
+                [
+                    "Select Entry: ",
+                    dcc.Dropdown(id='u-production-select', options=[
+                        {
+                            'label': entry['title'],
+                            'value': str(entry['_id']),
+                        }
+                        for entry in db.productions.find({})
+                    ]),
+                    "Venue: ",
+                    dcc.Input(id='u-production-venue', type='text'),
+                    "Open Date: ",
+                    dcc.DatePickerSingle(id='u-production-open'),
+                    "Close Date: ",
+                    dcc.DatePickerSingle(id='u-production-close'),
+                    "Festival: ",
+                    dcc.Dropdown(id='u-production-festival', options=[''] + FESTIVALS),
+                ],
+                id='u-production',
+                hidden=True
+            ),
+            html.Div(
+                [
+                    "Select Entry: ",
+                    dcc.Dropdown(id='u-cast-crew-select', options=[
+                        {
+                            'label': f"{db.productions.find_one({'_id': entry['production']})['title']}"
+                                f" / {db.people.find_one({'_id': entry['person']})['surname']}"
+                                f" / {entry['role']}",
+                            'value': str(entry['_id']),
+                        }
+                        for entry in db.castcrew.find({})
+                    ]),
+                    "Role Name: ",
+                    dcc.Input(id='u-cast-crew-role-name', type='text'),
+                ],
+                id='u-cast-crew',
+                hidden=True
+            ),
+            html.Div(
+                [
+                    "Select Entry: ",
+                    dcc.Dropdown(id='u-committee-select', options=[
+                        {
+                            'label': f"{entry['season']} / {entry['position']}"
+                                f" / {db.people.find_one({'_id': entry['holder']})['surname']}",
+                            'value': str(entry['_id']),
+                        }
+                        for entry in db.committee.find({})
+                    ]),
+                ],
+                id='u-committee',
+                hidden=True
+            ),
+            html.Div(
+                [
+                    "Select Entry: ",
+                    dcc.Dropdown(id='u-person-select', options=[
+                        {
+                            'label': f"{entry['first_name']} {entry['surname']}",
+                            'value': str(entry['_id']),
+                        } for entry in db.people.find({})
+                    ]),
+                    "Address (first line): ",
+                    dcc.Input(id='u-person-address', type='text'),
+                    "Postcode (including town): ",
+                    dcc.Input(id='u-person-postcode', type='text'),
+                    "Address is Private: ",
+                    dcc.Dropdown(id='u-person-address-private', options=[True, False], value=True),
+                    "Home Phone: ",
+                    dcc.Input(id='u-person-home-phone', type='text'),
+                    "Home Phone is Private: ",
+                    dcc.Dropdown(id='u-person-home-phone-private', options=[True, False], value=True),
+                    "Mobile: ",
+                    dcc.Input(id='u-person-mobile', type='text'),
+                    "Mobile is Private: ",
+                    dcc.Dropdown(id='u-person-mobile-private', options=[True, False], value=True),
+                    "Email: ",
+                    dcc.Input(id='u-person-email', type='text'),
+                    "Email is Private: ",
+                    dcc.Dropdown(id='u-person-email-private', options=[True, False], value=True),
+                    "Gender: ",
+                    dcc.Dropdown(
+                        id='u-person-gender',
+                        options=[''] + [{'label': x, 'value': x.lower()} for x in GENDERS]
+                    ),
+                    "GDPR Signed On: ",
+                    dcc.DatePickerSingle(id='u-person-gdpr'),
+                ],
+                id='u-person',
+                hidden=True
+            ),
+            html.Div([
+                "Update: ",
+                dcc.Dropdown(id='u-verify', options=VERIFICATION, value=False),
+            ]),
+            html.Div([
+                "Delete: ",
+                dcc.Dropdown(id='u-delete', options=VERIFICATION, value=False),
+            ]),
+            html.Div(id='u-returned')
+        ],
+        id='section-update-records',
         hidden=True
     )
 )
@@ -387,6 +579,45 @@ def update_tab_in_other_sections(prefix: str, tab: str):
 for prefix, tabs in non_transaction_tabs.items():
     for tab in tabs:
         update_tab_in_other_sections(prefix, tab)
+
+def fill_in_value_update_fields(tab: str, field: str):
+    @callback(
+        Output(f'u-{tab}-{field}', 'value'),
+        Input(f'u-{tab}-select', 'value'),
+    )
+    def current_value(entry_id: str):
+        if not entry_id:
+            return
+        entry = update_fields[tab]['collection'].find_one({'_id': ObjectId(entry_id)})
+
+        value = entry.get(update_fields[tab]['value'][field])
+        if value is None:
+            return
+
+        if type(value) == Decimal128:
+            value = float(str(value))
+        elif type(value) == ObjectId:
+            value = str(value)
+
+        return value
+
+def fill_in_date_update_fields(tab: str, field: str):
+    @callback(
+        Output(f'u-{tab}-{field}', 'date'),
+        Input(f'u-{tab}-select', 'value'),
+    )
+    def current_value(entry_id: str):
+        if not entry_id:
+            return
+        entry = update_fields[tab]['collection'].find_one({'_id': ObjectId(entry_id)})
+        return entry.get(update_fields[tab]['date'][field])
+
+for tab in update_fields.keys():
+    for field in update_fields[tab]['value']:
+        fill_in_value_update_fields(tab, field)
+
+    for field in update_fields[tab]['date']:
+        fill_in_date_update_fields(tab, field)
 
 
 # @callback(
