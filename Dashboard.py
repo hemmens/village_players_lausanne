@@ -192,7 +192,8 @@ update_fields = {
         'date': {'open': 'open_date', 'close': 'close_date'}
     },
     'production': {
-        'collection': db.productions,'value': {'venue': 'venue', 'festival': 'festival'},
+        'collection': db.productions,
+        'value': {'venue': 'venue', 'author': 'author', 'festival': 'festival'},
         'date': {'open': 'open_date', 'close': 'close_date'}
     },
     'cast-crew': {'collection': db.castcrew, 'value': {'role-name': 'role_name'}, 'date': []},
@@ -261,6 +262,8 @@ app_layout.append(
                     dcc.Input(id='a-production-name', type='text'),
                     "Venue: ",
                     dcc.Input(id='a-production-venue', type='text'),
+                    "Author: ",
+                    dcc.Input(id='a-production-author', type='text'),
                     "Open Date: ",
                     dcc.DatePickerSingle(id='a-production-open'),
                     "Close Date: ",
@@ -410,6 +413,8 @@ app_layout.append(
                     ]),
                     "Venue: ",
                     dcc.Input(id='u-production-venue', type='text'),
+                    "Author: ",
+                    dcc.Input(id='u-production-author', type='text'),
                     "Open Date: ",
                     dcc.DatePickerSingle(id='u-production-open'),
                     "Close Date: ",
@@ -731,6 +736,7 @@ def return_status_transaction(
     State('a-festival-close', 'date'),
     State('a-production-name', 'value'),
     State('a-production-venue', 'value'),
+    State('a-production-author', 'value'),
     State('a-production-open', 'date'),
     State('a-production-close', 'date'),
     State('a-production-festival', 'value'),
@@ -767,6 +773,7 @@ def return_status_add(
     festival_close: str | None,
     production_name: str | None,
     production_venue: str | None,
+    production_author: str | None,
     production_open: str | None,
     production_close: str | None,
     production_festival: str | None,
@@ -813,8 +820,8 @@ def return_status_add(
     elif tab == 'a-tab-production':
         return vpt.handle_status_message(
             tab, avp.add_production(
-                db.productions, production_name, production_venue, production_open,
-                production_close, production_festival
+                db.productions, production_name, production_venue, production_author,
+                production_open, production_close, production_festival
             )
         )
     elif tab == 'a-tab-cast-crew':
@@ -853,6 +860,7 @@ def return_status_add(
     State('u-festival-close', 'date'),
     State('u-production-select', 'value'),
     State('u-production-venue', 'value'),
+    State('u-production-author', 'value'),
     State('u-production-open', 'date'),
     State('u-production-close', 'date'),
     State('u-production-festival', 'value'),
@@ -882,6 +890,7 @@ def return_status_update(
     festival_close: str | None,
     production_id: str | None,
     production_venue: str | None,
+    production_author: str | None,
     production_open: str | None,
     production_close: str | None,
     production_festival: str | None,
@@ -922,8 +931,8 @@ def return_status_update(
     elif tab == 'u-tab-production':
         return vpt.handle_status_message(
             tab, uvp.update_production(
-                db.productions, production_id, production_venue, production_open,
-                production_close, production_festival
+                db.productions, production_id, production_venue, production_author,
+                production_open, production_close, production_festival
             )
         )
     elif tab == 'u-tab-cast-crew':
@@ -987,11 +996,17 @@ def return_status_delete(
         )
     elif tab == 'u-tab-festival':
         return vpt.handle_status_message(
-            tab, uvp.delete_record(db.festivals, festival_id)
+            tab, uvp.delete_record(
+                db.festivals, festival_id,
+                {db.productions: 'festival', db.transactions: 'Production'}
+            )
         )
     elif tab == 'u-tab-production':
         return vpt.handle_status_message(
-            tab, uvp.delete_record(db.productions, production_id)
+            tab, uvp.delete_record(
+                db.productions, production_id,
+                {db.castcrew: 'production', db.transactions: 'Production'}
+            )
         )
     elif tab == 'u-tab-cast-crew':
         return vpt.handle_status_message(
@@ -1003,7 +1018,15 @@ def return_status_delete(
         )
     elif tab == 'u-tab-person':
         return vpt.handle_status_message(
-            tab, uvp.delete_record(db.people, person_id)
+            tab, uvp.delete_record(
+                db.people, person_id,
+                {
+                    db.castcrew: 'person',
+                    db.committee: 'holder',
+                    db.members: 'person',
+                    db.transactions: 'Recipient',
+                }
+            )
         )
 
     return vpt.handle_status_message(tab, "Verified!")

@@ -5,10 +5,16 @@ import vp_tools as vpt
 
 def delete_record(
     collection: Collection,
-    db_id: str | None
+    db_id: str | None,
+    checks: dict[Collection, str] | None = None
 ) -> str:
     if not db_id:
         return "No record selected"
+
+    if checks:
+        for check, field in checks.items():
+            if check.find_one({field: ObjectId(db_id)}):
+                return "Cannot delete due to dependent records"
 
     deleted_record = collection.find_one_and_delete({'_id': ObjectId(db_id)})
 
@@ -72,6 +78,7 @@ def update_production(
     productions: Collection,
     production_id: str | None,
     venue: str | None,
+    author: str | None,
     open: str | None,
     close: str | None,
     festival: str | None
@@ -112,6 +119,11 @@ def update_production(
             update_payload['$set']['close_date'] = vpt.convert_date(close)
         else:
             update_payload['$unset']['close_date'] = ""
+
+    if author:
+        update_payload['$set']['author'] = author
+    else:
+        update_payload['$unset']['author'] = ""
 
     entry = productions.find_one_and_update(
         {'_id': ObjectId(production_id)}, update_payload

@@ -59,6 +59,7 @@ def add_production(
     productions: Collection,
     title: str | None,
     venue: str | None,
+    author: str | None,
     open: str | None,
     close: str | None,
     festival: str | None
@@ -80,6 +81,9 @@ def add_production(
             production_payload['venue'] = venue
         if close:
             production_payload['close_date'] = vpt.convert_date(close)
+
+    if author: 
+        production_payload['author'] = author
 
     new_production = productions.insert_one(production_payload)
 
