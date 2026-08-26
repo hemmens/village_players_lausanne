@@ -1,4 +1,5 @@
 from datetime import datetime, timedelta
+import pandas as pd
 
 from bson.decimal128 import Decimal128
 from bson.objectid import ObjectId
@@ -130,7 +131,7 @@ main_tabs = {
     'transactions': 'Insert New Transactions',
     'insert-records': 'Insert a New Record',
     'update-records': 'Update a Record',
-    # 'find-records': 'Find Records',
+    'find-records': 'Find Records',
 }
 
 app_layout = [
@@ -185,6 +186,7 @@ non_transaction_tabs = {
     'a': ['balance', 'festival', 'production', 'cast-crew', 'committee', 'person'],
     'u': ['balance', 'festival', 'production', 'cast-crew', 'committee', 'person'],
 }
+
 update_fields = {
     'balance': {'collection': db.balance, 'value': {'amount': 'balance'}, 'date': []},
     'festival': {
@@ -281,10 +283,7 @@ app_layout.append(
                     "Production: ",
                     dcc.Dropdown(id='a-cast-crew-production', options=PRODUCTIONS),
                     "Role: ",
-                    dcc.Dropdown(
-                        id='a-cast-crew-role',
-                        options=[''] + [{'label': x, 'value': x.lower()} for x in ROLE_TYPES]
-                    ),
+                    dcc.Dropdown(id='a-cast-crew-role', options=[''] + ROLE_TYPES),
                     "Role Name: ",
                     dcc.Input(id='a-cast-crew-role-name', type='text'),
                 ],
@@ -328,10 +327,7 @@ app_layout.append(
                     "Email is Private: ",
                     dcc.Dropdown(id='a-person-email-private', options=[True, False], value=True),
                     "Gender: ",
-                    dcc.Dropdown(
-                        id='a-person-gender',
-                        options=[''] + [{'label': x, 'value': x.lower()} for x in GENDERS]
-                    ),
+                    dcc.Dropdown( id='a-person-gender', options=[''] + GENDERS),
                     "GDPR Signed On: ",
                     dcc.DatePickerSingle(id='a-person-gdpr'),
                 ],
@@ -486,10 +482,7 @@ app_layout.append(
                     "Email is Private: ",
                     dcc.Dropdown(id='u-person-email-private', options=[True, False], value=True),
                     "Gender: ",
-                    dcc.Dropdown(
-                        id='u-person-gender',
-                        options=[''] + [{'label': x, 'value': x.lower()} for x in GENDERS]
-                    ),
+                    dcc.Dropdown(id='u-person-gender', options=[''] + GENDERS),
                     "GDPR Signed On: ",
                     dcc.DatePickerSingle(id='u-person-gdpr'),
                 ],
@@ -508,6 +501,33 @@ app_layout.append(
             html.Div(id='u-deleted', hidden=True)
         ],
         id='section-update-records',
+        hidden=True
+    )
+)
+
+app_layout.append(
+    html.Div(
+        [
+            html.H2('Find Records: '),
+            dcc.Tabs(
+                id='f-tabs', value='f-tab-balance', children=[
+                    dcc.Tab(label="Balances", value='f-tab-balance'),
+                ]
+            ),
+            html.Div(
+                [
+                    "Select Seasons: ",
+                    dcc.Dropdown(id='f-balance-seasons', options=SEASONS, multi=True, value=[SEASONS[0]]),
+                    dag.AgGrid(
+                        id='f-balance-history',
+                        columnDefs=[{'field': 'date'}, {'field': 'balance'}]
+                    )
+                ],
+                id='f-balance',
+                hidden=False
+            ),
+        ],
+        id='section-find-records',
         hidden=True
     )
 )
@@ -640,6 +660,26 @@ for tab in update_fields.keys():
     for field in update_fields[tab]['date']:
         fill_in_date_update_fields(tab, field)
 
+@callback(
+    Output('f-balance-history', 'rowData'),
+    Input('f-balance-seasons', 'value')
+)
+def load_balance_history(seasons: list[str]):
+    if not seasons:
+        return pd.DataFrame().to_dict('records')
+
+    years = [datetime(int(season[:4]), 5, 25) for season in seasons]
+
+    balances = pd.DataFrame(db.balance.find({}))
+    datasets = [
+        balances.loc[balances.date.apply(lambda x: x > year and x < year + timedelta(375))]
+        for year in years
+    ]
+    dataset = pd.concat(datasets)
+    dataset.balance = dataset.balance.astype(str)
+    dataset.drop_duplicates(inplace=True)
+    dataset.sort_values('date', ascending=False, inplace=True)
+    return dataset[['date', 'balance']].to_dict('records')
 
 # @callback(
 #     Output('dataframe', 'columnDefs'),

@@ -102,7 +102,7 @@ def add_cast_crew(
     cast_crew_payload = {
         'person': ObjectId(person),
         'production': ObjectId(production),
-        'role': role.lower()
+        'role': role
     }
     if cast_crew.find_one(cast_crew_payload):
         return "Cast/Crew member already exists"
@@ -126,7 +126,7 @@ def add_committee(
     committee_payload = {
         'person': ObjectId(person),
         'season': season,
-        'position': position.lower()
+        'position': position
     }
 
     if committee.find_one(committee_payload):
@@ -182,7 +182,7 @@ def add_person(
     if email_private:
         person_payload['email_private'] = email_private
     if gender:
-        person_payload['gender'] = gender.lower()
+        person_payload['gender'] = gender
     if gdpr:
         person_payload['gdpr'] = vpt.convert_date(gdpr)
 
