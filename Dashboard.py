@@ -48,8 +48,6 @@ transaction_fields = {
     't-member-2': {'type': 'text'},
     't-member-3': {'type': 'text'},
     't-production': {'type': 'dropdown', 'options': [''] + PRODUCTIONS},
-    # 'season': {'type': 'dropdown-multi', 'options': SEASONS},
-    # 'membership-type-find': {'type': 'dropdown-multi', 'options': MEMBER_TYPES},
     't-verify': {'type': 'dropdown', 'options': VERIFICATION},
 }
 transaction_tabs = {
@@ -118,13 +116,6 @@ transaction_tabs = {
             't-amount': BANK_CHARGE,
         },
     },
-    # 'tab-membership-list': {
-    #     'label': "Show Members",
-    #     'defaults': {
-    #         'season': SEASONS[-1],
-    #         'membership-type-find': MEMBER_TYPES,
-    #     },
-    # },
 }
 
 main_tabs = {
@@ -188,18 +179,32 @@ non_transaction_tabs = {
 }
 
 update_fields = {
-    'balance': {'collection': db.balance, 'value': {'amount': 'balance'}, 'date': []},
+    'balance': {
+        'collection': db.balance, 'value': {'amount': 'balance'}, 'date': [],
+        'entry_lambda': lambda x: x['date'].strftime("%B %Y")
+    },
     'festival': {
         'collection': db.festivals, 'value': {'venue': 'venue'},
-        'date': {'open': 'open_date', 'close': 'close_date'}
+        'date': {'open': 'open_date', 'close': 'close_date'},
+        'entry_lambda': lambda x: x['title']
     },
     'production': {
         'collection': db.productions,
         'value': {'venue': 'venue', 'author': 'author', 'festival': 'festival'},
-        'date': {'open': 'open_date', 'close': 'close_date'}
+        'date': {'open': 'open_date', 'close': 'close_date'},
+        'entry_lambda': lambda x: x['title']
     },
-    'cast-crew': {'collection': db.castcrew, 'value': {'role-name': 'role_name'}, 'date': []},
-    'committee': {'collection': db.committee,'value': {}, 'date': {}},
+    'cast-crew': {
+        'collection': db.castcrew, 'value': {'role-name': 'role_name'}, 'date': [],
+        'entry_lambda': lambda x: f"{db.productions.find_one({'_id': x['production']})['title']}"
+                                f" / {db.people.find_one({'_id': x['person']})['surname']}"
+                                f" / {x['role']}"
+    },
+    'committee': {
+        'collection': db.committee, 'value': {}, 'date': {},
+        'entry_lambda': lambda x: f"{x['season']} / {x['position']}"
+                                f" / {db.people.find_one({'_id': x['holder']})['surname']}"
+    },
     'person': {
         'collection': db.people,
         'value': {
@@ -209,6 +214,7 @@ update_fields = {
             'email-private': 'email_private', 'gender': 'gender'
         },
         'date': {'gdpr': 'gdpr'},
+        'entry_lambda': lambda x: f"{x['first_name']} {x['surname']}"
     }
 }
 
@@ -520,7 +526,7 @@ app_layout.append(
                     dcc.Dropdown(id='f-balance-seasons', options=SEASONS, multi=True, value=[SEASONS[0]]),
                     dag.AgGrid(
                         id='f-balance-history',
-                        columnDefs=[{'field': 'date'}, {'field': 'balance'}]
+                        columnDefs=[{'field': 'month'}, {'field': 'balance'}]
                     )
                 ],
                 id='f-balance',
@@ -531,7 +537,6 @@ app_layout.append(
         hidden=True
     )
 )
-
 
 # app_layout.append(
 #     html.Div([
@@ -660,6 +665,25 @@ for tab in update_fields.keys():
     for field in update_fields[tab]['date']:
         fill_in_date_update_fields(tab, field)
 
+def update_dropdown_menus(tab: str):
+    @callback(
+        Output(f'u-{tab}-select', 'options'),
+        Input('a-returned', 'children'),
+        Input('u-updated', 'children'),
+        Input('u-deleted', 'children')
+    )
+    def update_dropdown_menu(add: str, update: str, delete: str):
+        return [
+            {
+                'label': update_fields[tab]['entry_lambda'](entry),
+                'value': str(entry['_id']),
+            }
+            for entry in update_fields[tab]['collection'].find({})
+        ]
+
+for tab in update_fields.keys():
+    update_dropdown_menus(tab)
+
 @callback(
     Output('f-balance-history', 'rowData'),
     Input('f-balance-seasons', 'value')
@@ -679,14 +703,8 @@ def load_balance_history(seasons: list[str]):
     dataset.balance = dataset.balance.astype(str)
     dataset.drop_duplicates(inplace=True)
     dataset.sort_values('date', ascending=False, inplace=True)
-    return dataset[['date', 'balance']].to_dict('records')
-
-# @callback(
-#     Output('dataframe', 'columnDefs'),
-#     Input('tabs-access-data', 'value')
-# )
-# def reset_columns_on_tab_switch(tab: str):
-#     return []
+    dataset['month'] = dataset.date.apply(lambda x: x.strftime('%d %B %Y'))
+    return dataset[['month', 'balance']].to_dict('records')
 
 @callback(
     Output('t-returned', 'children'),
