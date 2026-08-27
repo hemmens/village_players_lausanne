@@ -160,7 +160,8 @@ def update_person(
     email: str | None,
     email_private: bool | None,
     gender: str | None,
-    gdpr: str | None
+    gdpr: str | None,
+    committee_email: str | None
 ) -> str:
     if not person_id:
         return "Select a record to update"
@@ -224,6 +225,13 @@ def update_person(
         update_payload['$set']['gdpr'] = vpt.convert_date(gdpr)
     else:
         update_payload['$unset']['gdpr'] = ""
+
+    if committee_email:
+        update_payload['$set']['committee_email'] = (
+            committee_email if '@' in committee_email else f'{committee_email}@villageplayers.ch'
+        )
+    else:
+        update_payload['$unset']['committee_email'] = ""
 
     entry = people.find_one_and_update(
         {'_id': ObjectId(person_id)}, update_payload

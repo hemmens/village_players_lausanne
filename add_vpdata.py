@@ -150,7 +150,8 @@ def add_person(
     email: str | None,
     email_private: bool | None,
     gender: str | None,
-    gdpr: str | None
+    gdpr: str | None,
+    committee_email: str | None
 ) -> str:
     if not first_name or not surname:
         return "Missing key data"
@@ -185,6 +186,10 @@ def add_person(
         person_payload['gender'] = gender
     if gdpr:
         person_payload['gdpr'] = vpt.convert_date(gdpr)
+    if committee_email:
+        person_payload['committee_email'] = (
+            committee_email if '@' in committee_email else f'{committee_email}@villageplayers.ch'
+        )
 
     new_person = people.insert_one(person_payload)
 
