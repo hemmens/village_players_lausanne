@@ -3,13 +3,15 @@ import pandas as pd
 
 from bson.decimal128 import Decimal128
 from bson.objectid import ObjectId
-from dash import Dash, html, dcc, callback, Output, Input, State
+from dash import Dash, html, dcc, callback, Output, Input, State, no_update
+from pymongo.errors import OperationFailure, ServerSelectionTimeoutError
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 import dash_ag_grid as dag
+import dash_auth
 
 from config import (
-    BANK_CHARGE, GENDERS, MEMBER_TYPES, NOT_OK, OK, ROLE_TYPES, SEASONS,
+    BANK_CHARGE, GENDERS, MEMBER_TYPES, NOT_OK, OK, PASSWORD, ROLE_TYPES, SEASONS,
     STORAGE_COST, STORAGE_OWNER, TRANS_TYPES, URI
 )
 import add_vpdata as avp
@@ -17,7 +19,15 @@ import transaction_vpdata as tvp
 import update_vpdata as uvp
 import vp_tools as vpt
 
-client = MongoClient(URI, server_api=ServerApi('1'))
+app = Dash(__name__)
+
+auth = dash_auth.BasicAuth(
+    app,
+    {
+        "test": "test",
+    }
+)
+client = MongoClient(URI.replace('{{user}}', 'chrishemmens').replace('{{pw}}', PASSWORD), server_api=ServerApi('1'))
 db = client.myDatabase
 NAMES = [
     {
@@ -126,6 +136,13 @@ main_tabs = {
 
 app_layout = [
     html.H1('Village Players Database Interface'),
+    "Username: ",
+    dcc.Input(id='db-username', type='text', value='testpublic'),
+    "Password: ",
+    dcc.Input(id='db-password', type='password', value='testpublic'),
+    html.Button("Access Database", id='db-login'),
+    html.Div(id='db-status'),
+    dcc.Store(id='db-session'),
     dcc.Tabs(
         id='main-tabs', value=list(main_tabs.keys())[0], children=[
             dcc.Tab(label=label, value=value) for value, label in main_tabs.items()
@@ -532,6 +549,7 @@ app_layout.append(
             ),
             html.Div(
                 [
+                    dcc.Download(id='f-member-download'),
                     "Select Seasons: ",
                     dcc.Dropdown(id='f-member-seasons', multi=True, options=SEASONS, value=[SEASONS[0]]),
                     "Select Membership Types: ",
@@ -549,18 +567,18 @@ app_layout.append(
                             'Email', 'Email Private', 'Gender', 'GDPR', 'Payment Amount',
                             'Payment Date',
                         ],
-                        value=['Season', 'Membership Type', 'First Name', 'Surname', 'Email']
+                        value=['Membership Type', 'First Name', 'Surname', 'Email']
                     ),
                     dag.AgGrid(
                         id='f-member-list',
                         columnDefs=[
-                            {'field': 'season'},
                             {'field': 'membership_type', 'headerName': 'Membership Type'}, 
                             {'field': 'first_name', 'headerName': 'First Name'}, 
                             {'field': 'surname'}, 
                             {'field': 'email'}, 
                         ]
-                    )
+                    ),
+                    html.Button("Export to Excel", id='f-member-button')
                 ],
                 id='f-member',
                 hidden=False
@@ -601,9 +619,31 @@ app_layout.append(
     )
 )
 
-app = Dash(__name__)
-
 app.layout = html.Div(app_layout)
+
+# @callback(
+#     Output('db-status', 'children'),
+#     Input('db-button', 'n_clicks'),
+#     State('db-username', 'value'),
+#     State('db-password', 'value'),
+#     prevent_initial_call=True
+# )
+# def authenticate(n, username, password):
+#     if not username or not password:
+#         return "Please provide username and password"
+
+#     try:
+#         client = MongoClient(
+#             URI.replace('{{user}}', username).replace('{{pw}}', password),
+#             server_api=ServerApi('1')
+#         )
+#         client.admin.command("ping")
+#     except (OperationFailure, ServerSelectionTimeoutError):
+#         return "Invalid MongoDB credentials"
+
+#     db = client.myDatabase
+
+#     return "Login successful"
 
 def switch_main_tab(section: str):
     @callback(
@@ -738,7 +778,7 @@ for tab in update_fields.keys():
     Input('f-member-persons', 'value')
 )
 def load_member_list(seasons: list[str], types: list[str], names: list[str]):
-    if not seasons or not types or not names:
+    if not seasons or not types:
         return pd.DataFrame().to_dict('records')
 
     members_filter = {'season': {'$in': seasons}, 'type': {'$in': types}}
@@ -759,11 +799,18 @@ def load_member_list(seasons: list[str], types: list[str], names: list[str]):
     ).set_index('_id')[['Date', 'Amount']]
 
     members = members.join(people, 'person').join(transactions, 'payment')
-    members = members[[
-        'season', 'type', 'carry_over', 'first_name', 'surname', 'address', 'postcode',
-        'address_private', 'home_phone', 'home_phone_private', 'mobile', 'mobile_private',
-        'email', 'email_private', 'gender', 'gdpr', 'Amount', 'Date'
-    ]]
+    output_columns = {
+        'season': str, 'type': str, 'carry_over': bool, 'first_name': str, 'surname': str,
+        'address': str, 'postcode': str, 'address_private': bool, 'home_phone': str,
+        'home_phone_private': bool, 'mobile': str, 'mobile_private': bool, 'email': str,
+        'email_private': bool, 'gender': str, 'gdpr': pd.Timestamp, 'Amount': Decimal128,
+        'Date': pd.Timestamp
+    }
+    for col, datatype in output_columns.items():
+        if col not in members.columns:
+            members[col] = pd.Series(dtype=datatype)
+
+    members = members[output_columns]
     members.columns = [
         'season', 'membership_type', 'carry_over', 'first_name', 'surname', 'address', 'postcode',
         'address_private', 'home_phone', 'home_phone_private', 'mobile', 'mobile_private',
@@ -784,6 +831,23 @@ def change_member_list_columns(columns: list[str]):
         {'field': column.replace(' ', '_').lower(), 'headerName': column}
         for column in columns
     ]
+
+@callback(
+    Output('f-member-download', 'data'),
+    Input('f-member-button', 'n_clicks'),
+    State('f-member-list', 'rowData'),
+    State('f-member-list', 'columnDefs'),
+    prevent_initial_call=True
+)
+def export_members_to_excel(n, members_list, columns):
+    cols = [x['field'] for x in columns]
+    df = pd.DataFrame(members_list)[cols]
+    df.index += 1
+    today = datetime.now().strftime('%Y%m%d')
+    writer = pd.ExcelWriter(f'vp_members_{today}.xlsx')
+    df.to_excel(writer)
+    writer.close()
+    return dcc.send_file(f'vp_members_{today}.xlsx')
 
 @callback(
     Output('f-committee-list', 'rowData'),

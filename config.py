@@ -41,7 +41,7 @@ BANK_CHARGE=-5
 NOT_OK = 'waiting'
 OK = 'SUBMIT'
 PASSWORD = "vpslausannedb00"
-SEASON = int(SEASONS[-1][-2:])
+SEASON = int(SEASONS[0][-2:])
 STORAGE_COST = -370
 STORAGE_OWNER = 'Procimmo Real Estate'
-URI = f"mongodb+srv://chrishemmens:{PASSWORD}@vps-00.lk81a.mongodb.net/?retryWrites=true&w=majority&appName=VPS-00"
+URI = "mongodb+srv://{{user}}:{{pw}}@vps-00.lk81a.mongodb.net/?retryWrites=true&w=majority&appName=VPS-00"
