@@ -13,7 +13,6 @@ from config import (
     STORAGE_COST, STORAGE_OWNER, TRANS_TYPES, URI
 )
 import add_vpdata as avp
-import find_vpdata as fvp
 import transaction_vpdata as tvp
 import update_vpdata as uvp
 import vp_tools as vpt
@@ -176,6 +175,7 @@ app_layout.append(
 non_transaction_tabs = {
     'a': ['balance', 'festival', 'production', 'cast-crew', 'committee', 'person'],
     'u': ['balance', 'festival', 'production', 'cast-crew', 'committee', 'person'],
+    'f': ['member', 'committee', 'balance'],
 }
 
 update_fields = {
@@ -211,13 +211,15 @@ update_fields = {
             'address': 'address', 'postcode': 'postcode', 'address-private': 'address_private',
             'home-phone': 'home_phone', 'home-phone-private': 'home_phone_private',
             'mobile': 'mobile', 'mobile-private': 'mobile_private', 'email': 'email',
-            'email-private': 'email_private', 'gender': 'gender'
+            'email-private': 'email_private', 'gender': 'gender',
+            'committee-email': 'committee_email'
         },
         'date': {'gdpr': 'gdpr'},
         'entry_lambda': lambda x: f"{x['first_name']} {x['surname']}"
     }
 }
 
+# Add
 app_layout.append(
     html.Div(
         [
@@ -336,6 +338,8 @@ app_layout.append(
                     dcc.Dropdown( id='a-person-gender', options=[''] + GENDERS),
                     "GDPR Signed On: ",
                     dcc.DatePickerSingle(id='a-person-gdpr'),
+                    "Committee Email: ",
+                    dcc.Input(id='a-person-committee-email', type='text'),
                 ],
                 id='a-person',
                 hidden=True
@@ -351,6 +355,7 @@ app_layout.append(
     )
 )
 
+# Update
 app_layout.append(
     html.Div(
         [
@@ -491,6 +496,8 @@ app_layout.append(
                     dcc.Dropdown(id='u-person-gender', options=[''] + GENDERS),
                     "GDPR Signed On: ",
                     dcc.DatePickerSingle(id='u-person-gdpr'),
+                    "Committee Email: ",
+                    dcc.Input(id='u-person-committee-email', type='text'),
                 ],
                 id='u-person',
                 hidden=True
@@ -511,14 +518,70 @@ app_layout.append(
     )
 )
 
+# Find
 app_layout.append(
     html.Div(
         [
             html.H2('Find Records: '),
             dcc.Tabs(
-                id='f-tabs', value='f-tab-balance', children=[
+                id='f-tabs', value='f-tab-member', children=[
+                    dcc.Tab(label="Members", value='f-tab-member'),
+                    dcc.Tab(label="Committee", value='f-tab-committee'),
                     dcc.Tab(label="Balances", value='f-tab-balance'),
                 ]
+            ),
+            html.Div(
+                [
+                    "Select Seasons: ",
+                    dcc.Dropdown(id='f-member-seasons', multi=True, options=SEASONS, value=[SEASONS[0]]),
+                    "Select Membership Types: ",
+                    dcc.Dropdown(
+                        id='f-member-types', multi=True, options=MEMBER_TYPES, value=MEMBER_TYPES
+                    ),
+                    "Select People: ",
+                    dcc.Dropdown(id='f-member-persons', multi=True, options=NAMES),
+                    "Select Columns: ",
+                    dcc.Dropdown(
+                        id='f-member-columns', multi=True, options=[
+                            'Season', 'Membership Type', 'Carry Over', 'First Name',
+                            'Surname', 'Address', 'Postcode', 'Address Private',
+                            'Home Phone', 'Home Phone Private', 'Mobile', 'Mobile Private',
+                            'Email', 'Email Private', 'Gender', 'GDPR', 'Payment Amount',
+                            'Payment Date',
+                        ],
+                        value=['Season', 'Membership Type', 'First Name', 'Surname', 'Email']
+                    ),
+                    dag.AgGrid(
+                        id='f-member-list',
+                        columnDefs=[
+                            {'field': 'season'},
+                            {'field': 'membership_type', 'headerName': 'Membership Type'}, 
+                            {'field': 'first_name', 'headerName': 'First Name'}, 
+                            {'field': 'surname'}, 
+                            {'field': 'email'}, 
+                        ]
+                    )
+                ],
+                id='f-member',
+                hidden=False
+            ),
+            html.Div(
+                [
+                    "Select Seasons: ",
+                    dcc.Dropdown(id='f-committee-seasons', options=SEASONS, multi=True, value=[SEASONS[0]]),
+                    dag.AgGrid(
+                        id='f-committee-list',
+                        columnDefs=[
+                            {'field': 'season'},
+                            {'field': 'position'}, 
+                            {'field': 'first_name', 'headerName': 'First Name'}, 
+                            {'field': 'surname'}, 
+                            {'field': 'committee_email', 'headerName': 'Email'}, 
+                        ]
+                    )
+                ],
+                id='f-committee',
+                hidden=True
             ),
             html.Div(
                 [
@@ -530,29 +593,13 @@ app_layout.append(
                     )
                 ],
                 id='f-balance',
-                hidden=False
+                hidden=True
             ),
         ],
         id='section-find-records',
         hidden=True
     )
 )
-
-# app_layout.append(
-#     html.Div([
-#         dag.AgGrid(
-#             id='dataframe',
-#             rowData=[],
-#             columnDefs=[
-#                 {'field': 'season'},
-#                 {'field': 'type'},
-#                 {'field': 'surname'},
-#                 {'field': 'first_name', 'headerName': 'First Name'},
-#                 {'field': 'email'},
-#             ],
-#         )
-#     ])
-# )
 
 app = Dash(__name__)
 
@@ -683,6 +730,80 @@ def update_dropdown_menus(tab: str):
 
 for tab in update_fields.keys():
     update_dropdown_menus(tab)
+
+@callback(
+    Output('f-member-list', 'rowData'),
+    Input('f-member-seasons', 'value'),
+    Input('f-member-types', 'value'),
+    Input('f-member-persons', 'value')
+)
+def load_member_list(seasons: list[str], types: list[str], names: list[str]):
+    if not seasons or not types or not names:
+        return pd.DataFrame().to_dict('records')
+
+    members_filter = {'season': {'$in': seasons}, 'type': {'$in': types}}
+    people_filter = {}
+    if names:
+        persons = [ObjectId(name.split('|')[0]) for name in names]
+        members_filter['person'] = {'$in': persons}
+        people_filter['_id'] = {'$in': persons}
+
+    members = pd.DataFrame(db.members.find(members_filter))
+    if members.shape[0] == 0:
+        return pd.DataFrame().to_dict('records')
+
+    members.set_index('_id', inplace=True)
+    people = pd.DataFrame(db.people.find(people_filter)).set_index('_id')
+    transactions = pd.DataFrame(
+        db.transactions.find({'Type': 'Membership Subscription', 'Amount': {'$gt': 0}})
+    ).set_index('_id')[['Date', 'Amount']]
+
+    members = members.join(people, 'person').join(transactions, 'payment')
+    members = members[[
+        'season', 'type', 'carry_over', 'first_name', 'surname', 'address', 'postcode',
+        'address_private', 'home_phone', 'home_phone_private', 'mobile', 'mobile_private',
+        'email', 'email_private', 'gender', 'gdpr', 'Amount', 'Date'
+    ]]
+    members.columns = [
+        'season', 'membership_type', 'carry_over', 'first_name', 'surname', 'address', 'postcode',
+        'address_private', 'home_phone', 'home_phone_private', 'mobile', 'mobile_private',
+        'email', 'email_private', 'gender', 'gdpr', 'payment_amount', 'payment_date'
+    ]
+    members.gdpr = members.gdpr.astype(str)
+    members.payment_amount = members.payment_amount.astype(str)
+    members.payment_date = members.payment_date.astype(str)
+    members.sort_values(['season', 'surname'], inplace=True)
+    return members.to_dict('records')
+
+@callback(
+    Output('f-member-list', 'columnDefs'),
+    Input('f-member-columns', 'value')
+)
+def change_member_list_columns(columns: list[str]):
+    return [
+        {'field': column.replace(' ', '_').lower(), 'headerName': column}
+        for column in columns
+    ]
+
+@callback(
+    Output('f-committee-list', 'rowData'),
+    Input('f-committee-seasons', 'value')
+)
+def load_committee_list(seasons: list[str]):
+    if not seasons:
+        return pd.DataFrame().to_dict('records')
+
+    committee = pd.DataFrame(db.committee.find({'season': {'$in': seasons}}))
+    if committee.shape[0] == 0:
+        return pd.DataFrame().to_dict('records')
+
+    committee.set_index('_id', inplace=True)
+    people = pd.DataFrame(db.people.find({})).set_index('_id')
+    committee = committee.join(people, 'holder')
+    committee.drop(['gdpr', 'holder'], inplace=True, axis=1)
+    committee.position = committee.position.apply(lambda x: x.title())
+    committee.sort_values('season', inplace=True)
+    return committee.to_dict('records')
 
 @callback(
     Output('f-balance-history', 'rowData'),
@@ -817,7 +938,8 @@ def return_status_transaction(
     State('a-person-email', 'value'),
     State('a-person-email-private', 'value'),
     State('a-person-gender', 'value'),
-    State('a-person-gdpr', 'date')
+    State('a-person-gdpr', 'date'),
+    State('a-person-committee-email', 'value')
 )
 def return_status_add(
     verified: bool,
@@ -854,7 +976,8 @@ def return_status_add(
     person_email: str | None,
     person_email_private: bool | None,
     person_gender: str | None,
-    person_gdpr: str | None
+    person_gdpr: str | None,
+    person_committee_email: str | None
 ) -> str:
     if not verified:
         try:
@@ -900,7 +1023,7 @@ def return_status_add(
                 db.people, person_first_name, person_surname, person_address, person_postcode,
                 person_address_private, person_phone, person_phone_private,
                 person_mobile, person_mobile_private, person_email, person_email_private,
-                person_gender, person_gdpr
+                person_gender, person_gdpr, person_committee_email
             )
         )
 
@@ -935,7 +1058,8 @@ def return_status_add(
     State('u-person-email', 'value'),
     State('u-person-email-private', 'value'),
     State('u-person-gender', 'value'),
-    State('u-person-gdpr', 'date')
+    State('u-person-gdpr', 'date'),
+    State('u-person-committee-email', 'value')
 )
 def return_status_update(
     verified: bool,
@@ -965,7 +1089,8 @@ def return_status_update(
     person_email: str | None,
     person_email_private: bool | None,
     person_gender: str | None,
-    person_gdpr: str | None
+    person_gdpr: str | None,
+    person_committee_email: str | None
 ) -> str:
     if not verified:
         try:
@@ -1005,7 +1130,7 @@ def return_status_update(
                 db.people, person_id, person_address, person_postcode,
                 person_address_private, person_phone, person_phone_private,
                 person_mobile, person_mobile_private, person_email, person_email_private,
-                person_gender, person_gdpr
+                person_gender, person_gdpr, person_committee_email
             )
         )
 
@@ -1088,22 +1213,6 @@ def return_status_delete(
         )
 
     return vpt.handle_status_message(tab, "Verified!")
-
-# @callback(
-#     Output('dataframe', 'rowData'),
-#     Input('verify', 'value'),
-#     State('tabs-access-data', 'value'),
-#     State('season', 'value'),
-#     State('membership-type-find', 'value')
-# )
-# def get_columns(verified: bool, tab: str, season: list[str], m_type: list[str]):
-#     if not verified:
-#         return []
-
-#     if tab == 'tab-membership-list':
-#         return fvp.get_membership_list(
-#             db.members, db.people, db.transactions, season, m_type
-#         ).to_dict('records')
 
 if __name__ == '__main__':
     app.run(debug=True)

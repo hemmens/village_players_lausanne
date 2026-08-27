@@ -5,7 +5,8 @@ from bson.decimal128 import Decimal128
 from pymongo.synchronous.collection import Collection
 
 def convert_date(date_str: str) -> datetime:
-    transaction_date = date_str.split('-')
+    transaction_date = date_str.split('T')[0]
+    transaction_date = transaction_date.split('-')
     return datetime(
         int(transaction_date[0]), int(transaction_date[1]), int(transaction_date[2])
     )
