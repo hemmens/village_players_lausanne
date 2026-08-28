@@ -124,7 +124,7 @@ def add_committee(
         return "Missing key data"
 
     committee_payload = {
-        'person': ObjectId(person),
+        'holder': ObjectId(person),
         'season': season,
         'position': position
     }
