@@ -1,0 +1,38 @@
+app/
+├── app.py                         # Flask/Dash entry point
+├── auth/
+│   ├── authentication.py         # MongoDB authentication
+│   └── session.py                # Public/Member/Admin session handling
+│
+├── dash_app/
+│   ├── layout.py                 # Overall Dash layout
+│   ├── callbacks.py              # Callbacks affecting whole sections
+│   │
+│   ├── section_1/
+│   │   ├── layout.py             # Section 1 layout/composition
+│   │   ├── callbacks.py          # ALL Section 1 callbacks
+│   │   ├── div_1.py
+│   │   ├── div_2.py
+│   │   ├── div_3.py
+│   │   └── ...
+│   │
+│   ├── section_2/
+│   │   ├── layout.py
+│   │   ├── callbacks.py
+│   │   ├── div_1.py
+│   │   ├── div_2.py
+│   │   ├── div_3.py
+│   │   └── ...
+│   │
+│   └── section_3/
+│       ├── layout.py
+│       ├── callbacks.py
+│       ├── div_1.py
+│       ├── div_2.py
+│       ├── div_3.py
+│       └── ...
+│
+├── assets/
+│   └── ...
+├── requirements.txt
+└── .env

@@ -1,0 +1,77 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>MongoDB Role App</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+</head>
+<body>
+  <header>
+    <strong>My Website</strong>
+    <span class="role">Access: {{ role }}</span>
+    {% if role != "Public" %}
+    <form method="post" action="{{ url_for('logout') }}">
+      <button class="secondary" type="submit">Sign out</button>
+    </form>
+    {% else %}
+    <a class="button secondary" href="{{ url_for('login') }}">Sign in</a>
+    {% endif %}
+  </header>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+      <div class="notice {{ category }}">{{ message }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  <main>
+    <section class="card">
+      <h1>Public content</h1>
+      <p>This content is available to everyone and is read-only.</p>
+      <button id="load">Load data</button>
+      <pre id="output"></pre>
+    </section>
+
+    {% if role in ["Member", "Admin"] %}
+    <section class="card">
+      <h2>Member tools</h2>
+      <p>You have write access.</p>
+      <input id="value" placeholder="Value to save">
+      <button id="save">Save</button>
+      <span id="saveResult"></span>
+    </section>
+    {% endif %}
+
+    {% if role == "Admin" %}
+    <section class="card">
+      <h2>Admin tools</h2>
+      <p>Only Admin sessions see this section.</p>
+      <a class="button" href="{{ url_for('admin') }}">Open admin area</a>
+    </section>
+    {% endif %}
+  </main>
+
+<script>
+document.querySelector("#load").addEventListener("click", async () => {
+  const r = await fetch("/api/data");
+  document.querySelector("#output").textContent =
+    JSON.stringify(await r.json(), null, 2);
+});
+
+const save = document.querySelector("#save");
+if (save) {
+  save.addEventListener("click", async () => {
+    const value = document.querySelector("#value").value;
+    const r = await fetch("/api/data", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({value})
+    });
+    document.querySelector("#saveResult").textContent =
+      r.ok ? "Saved." : (await r.json()).error;
+  });
+}
+</script>
+</body>
+</html>

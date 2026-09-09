@@ -1,0 +1,16 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Admin</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+</head>
+<body>
+  <main class="card">
+    <h1>Admin area</h1>
+    <p>This route is protected server-side; hiding a UI element is not the security boundary.</p>
+    <a class="button secondary" href="{{ url_for('index') }}">Back</a>
+  </main>
+</body>
+</html>

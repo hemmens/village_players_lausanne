@@ -1,8 +1,8 @@
 from bson.objectid import ObjectId
 from pymongo.synchronous.collection import Collection
 
-from config import SEASON
-import vp_tools as vpt
+from draft00.config import SEASON
+import draft00.vp_tools as vpt
 
 def add_misc_transaction(
     transactions: Collection,
