@@ -1,7 +1,7 @@
 from bson.objectid import ObjectId
 from pymongo.synchronous.collection import Collection
 
-import vp_tools as vpt
+import draft00.vp_tools as vpt
 
 def delete_record(
     collection: Collection,

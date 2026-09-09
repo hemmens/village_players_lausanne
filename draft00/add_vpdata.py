@@ -3,7 +3,7 @@ from datetime import datetime, timedelta
 from bson.objectid import ObjectId
 from pymongo.synchronous.collection import Collection
 
-import vp_tools as vpt
+import draft00.vp_tools as vpt
 
 def add_balance(
     balances: Collection,
