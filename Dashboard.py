@@ -8,7 +8,7 @@ from pymongo.errors import OperationFailure, ServerSelectionTimeoutError
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
 import dash_ag_grid as dag
-import dash_auth
+# import dash_auth
 
 from config import (
     BANK_CHARGE, GENDERS, MEMBER_TYPES, NOT_OK, OK, PASSWORD, ROLE_TYPES, SEASONS,
