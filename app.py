@@ -6,6 +6,10 @@ from urllib.parse import quote
 from flask import Flask, flash, redirect, render_template, request, session, url_for
 from pymongo import MongoClient, ReturnDocument
 from pymongo.errors import PyMongoError, OperationFailure
+from pymongo.server_api import ServerApi
+
+from committee.layout import create_committee_app
+from members.layout import create_members_app
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", secrets.token_hex(32))
@@ -13,7 +17,7 @@ app.secret_key = os.environ.get("FLASK_SECRET_KEY", secrets.token_hex(32))
 # MongoDB settings. Keep these on the server; never expose them to browser JS.
 MONGODB_URI_TEMPLATE = os.environ.get(
     "MONGODB_URI_TEMPLATE",
-    "mongodb://{username}:{password}@localhost:27017/appdb?authSource=admin",
+    "mongodb+srv://{username}:{password}@vps-00.lk81a.mongodb.net/?retryWrites=true&w=majority&appName=VPS-00",
 )
 APP_DB_NAME = os.environ.get("APP_DB_NAME", "appdb")
 LEASE_SECONDS = int(os.environ.get("PRIVILEGED_LEASE_SECONDS", "120"))
@@ -39,7 +43,7 @@ def authenticate(username, password):
     client = None
     try:
         uri = mongo_uri_for_credentials(username, password)
-        client = MongoClient(uri, serverSelectionTimeoutMS=5000)
+        client = MongoClient(uri, server_api=ServerApi('1')) #, serverSelectionTimeoutMS=5000)
         # Force authentication/connection now rather than relying on lazy connect.
         client.admin.command("ping")
 
@@ -125,8 +129,11 @@ def renew_lease():
 
 
 def current_role():
+    if app.debug:
+        return session.get("debug_role", "Public")
+
     role = session.get("role", "Public")
-    if role in {"Member", "Admin"}:
+    if role in {"Committee", "Treasurer"}:
         if renew_lease():
             return role
         # Lease was lost/expired: safely fall back to Public.
@@ -145,6 +152,21 @@ def maintain_privileged_session():
 def index():
     role = current_role()
     return render_template("index.html", role=role)
+
+
+@app.route("/set-debug-role", methods=["POST"])
+def set_debug_role():
+    if not app.debug:
+        return "Not available", 404
+
+    role = request.form.get("role", "Public")
+
+    if role not in {"Public", "Committee", "Treasurer"}:
+        role = "Public"
+
+    session["debug_role"] = role
+
+    return redirect(url_for("index"))
 
 
 @app.route("/login", methods=["GET", "POST"])
@@ -237,19 +259,15 @@ def write_data():
         client.close()
 
 
-@app.route("/admin", methods=["GET"])
-def admin():
-    if current_role() != "Admin":
-        return redirect(url_for("index"))
-    return render_template("admin.html")
-
-
 @app.after_request
 def no_store_for_auth_pages(response):
     if request.endpoint in {"login", "logout"}:
         response.headers["Cache-Control"] = "no-store"
     return response
 
+members_app = create_members_app(app)
+committee_app = create_committee_app(app)
 
 if __name__ == "__main__":
-    app.run(host="127.0.0.1", port=int(os.environ.get("PORT", "5000")), debug=False)
+    # app.run(host="127.0.0.1", port=int(os.environ.get("PORT", "5000")), debug=False)
+    app.run(debug=True)
