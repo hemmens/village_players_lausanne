@@ -8,7 +8,9 @@ from pymongo import MongoClient, ReturnDocument
 from pymongo.errors import PyMongoError, OperationFailure
 from pymongo.server_api import ServerApi
 
-from committee.layout import create_committee_app
+from committee.layout import (
+    create_committee_insert_app, create_committee_lookup_app, create_committee_update_app
+)
 from members.layout import create_members_app
 
 app = Flask(__name__)
@@ -266,7 +268,9 @@ def no_store_for_auth_pages(response):
     return response
 
 members_app = create_members_app(app)
-committee_app = create_committee_app(app)
+committee_lookup_app = create_committee_lookup_app(app)
+committee_insert_app = create_committee_insert_app(app)
+committee_update_app = create_committee_update_app(app)
 
 if __name__ == "__main__":
     # app.run(host="127.0.0.1", port=int(os.environ.get("PORT", "5000")), debug=False)
