@@ -48,6 +48,19 @@ def get_names():
         for x in db.people.find({})
     )
 
+def get_committee_positions():
+    if not has_request_context():
+        return []
+
+    return list(
+        {
+            'label': f"{entry['season']} / {entry['position']}"
+                f" / {db.people.find_one({'_id': entry['holder']})['surname']}",
+            'value': str(entry['_id']),
+        }
+        for entry in db.committee.find({})
+    )
+
 def get_member_list(role, seasons, types, persons, columns):
     if not has_request_context() or role not in {"Committee", "Treasurer", "Public"}:
         return pd.DataFrame().to_dict('records')
@@ -97,3 +110,64 @@ def get_member_list(role, seasons, types, persons, columns):
     members.sort_values(['season', 'surname'], inplace=True)
     
     return members.to_dict('records')
+
+def get_committee_list(role, seasons):
+    if not has_request_context() or role not in {"Committee", "Treasurer", "Public"}:
+        return pd.DataFrame().to_dict('records')
+
+    committee = pd.DataFrame(db.committee.find({'season': {'$in': seasons}}))
+    if committee.empty:
+        return pd.DataFrame().to_dict('records')
+
+    committee.set_index('_id', inplace=True)
+    people = pd.DataFrame(db.people.find()).set_index('_id')
+    committee = committee.join(people, 'holder')
+    committee = committee[['season', 'position', 'first_name', 'surname', 'committee_email']]
+    committee['committee_email'] = committee['committee_email'].fillna('')
+    committee.position = committee.position.apply(lambda x: x.title())
+    committee.sort_values('season', inplace=True)
+    return committee.to_dict('records')
+
+def insert_committee_member(person_id, season, position):
+    # if not has_request_context():
+    #     return {"error": "No request context."}, 400
+
+    if not person_id or not season or not position:
+        return "Person, season, and position are required." # {"error": "Person, season, and position are required."}, 400
+
+    try:
+        ObjectId(person_id)
+    except Exception as e:
+        return f"Invalid person ID: {e}" # {"error": f"Invalid person ID: {e}"}, 400
+
+    committee_payload = {
+        'holder': ObjectId(person_id),
+        'season': season,
+        'position': position
+    }
+
+    existing = db.committee.find_one(committee_payload)
+    if existing:
+        return {"error": "Committee member already exists"}, 400
+
+    new_committee_member = db.committee.insert_one(committee_payload)
+
+    return f"New committee member: {str(new_committee_member.inserted_id)}" # {"ok": True}, 201
+
+def delete_committee_member(committee_id):
+    # if not has_request_context():
+    #     return {"error": "No request context."}, 400
+
+    if not committee_id:
+        return "Committee member ID is required." # {"error": "Committee member ID is required."}, 400
+
+    try:
+        ObjectId(committee_id)
+    except Exception as e:
+        return f"Invalid committee member ID: {e}" # {"error": f"Invalid committee member ID: {e}"}, 400
+
+    result = db.committee.delete_one({'_id': ObjectId(committee_id)})
+    if result.deleted_count == 0:
+        return "Committee member not found" # {"error": "Committee member not found"}, 404
+
+    return "Committee member deleted successfully" # {"ok": True}, 200

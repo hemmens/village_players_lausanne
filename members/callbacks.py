@@ -14,32 +14,11 @@ def register_member_callbacks(app, server):
         return current_role(server)
     
     @app.callback(
-        Output('f-member-types-label', 'hidden'),
+        Output('f-member-access', 'hidden'),
         Input('f-member-role', 'data'),
     )
     def update_types_label(role):
-        return role == "Public"
-    
-    @app.callback(
-        Output('f-member-columns-label', 'hidden'),
-        Input('f-member-role', 'data'),
-    )
-    def update_columns_label(role):
-        return role == "Public"
-    
-    @app.callback(
-        Output('f-member-types', 'style'),
-        Input('f-member-role', 'data'),
-    )
-    def update_types_style(role):
-        return {'display': 'none'} if role == "Public" else {}
-
-    @app.callback(
-        Output('f-member-columns', 'style'),
-        Input('f-member-role', 'data'),
-    )
-    def update_columns_style(role):
-        return {'display': 'none'} if role == "Public" else {}
+        return role not in {"Committee", "Treasurer"}
 
     @app.callback(
         Output('f-member-columns', 'value'),
@@ -48,7 +27,7 @@ def register_member_callbacks(app, server):
     def update_columns_value(role):
         return [
                 'Season', 'First Name', 'Surname'
-            ] if role == "Public" else [
+            ] if role not in {"Committee", "Treasurer"} else [
                 'Membership Type', 'First Name', 'Surname', 'Email'
             ]
 
@@ -68,7 +47,7 @@ def register_member_callbacks(app, server):
                 {'field': 'season', 'headerName': 'Season'}, 
                 {'field': 'first_name', 'headerName': 'First Name'}, 
                 {'field': 'surname', 'headerName': 'Surname'},
-            ] if role == "Public" else [
+            ] if role not in {"Committee", "Treasurer"} else [
                 {'field': 'type', 'headerName': 'Membership Type'},
                 {'field': 'first_name', 'headerName': 'First Name'},
                 {'field': 'surname', 'headerName': 'Surname'},

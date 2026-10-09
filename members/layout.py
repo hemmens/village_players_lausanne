@@ -26,21 +26,21 @@ def create_members_app(server):
         dcc.Download(id='f-member-download'),
         html.Label("Select Seasons: ", id='f-member-seasons-label'),
         dcc.Dropdown(id='f-member-seasons', multi=True, options=seasons, value=[seasons[0]]),
-        html.Label(
-            "Select Membership Types: ", id='f-member-types-label', hidden=(role == "Public")
-        ),
-        dcc.Dropdown(
-            id='f-member-types', multi=True, options=mtypes, value=mtypes,
-            style={'display': 'none'} if role == "Public" else {}
+        html.Div(
+            [
+                html.Label("Select Membership Types: ", id='f-member-types-label'),
+                dcc.Dropdown(id='f-member-types', multi=True, options=mtypes, value=mtypes),
+                html.Label("Select Columns: ", id='f-member-columns-label'),
+                dcc.Dropdown(
+                    id='f-member-columns', multi=True, options=mcols,
+                    value=['Season', 'First Name', 'Surname']
+                ),
+            ],
+            id='f-member-access',
+            hidden=(role not in {"Committee", "Treasurer"})
         ),
         html.Label("Select People: ", id='f-member-persons-label'),
         dcc.Dropdown(id='f-member-persons', multi=True, options=[], value=[]),
-        html.Label("Select Columns: ", id='f-member-columns-label', hidden=(role == "Public")),
-        dcc.Dropdown(
-            id='f-member-columns', multi=True, options=mcols,
-            value=['Season', 'First Name', 'Surname'],
-            style={'display': 'none'} if role == "Public" else {}
-        ),
         dag.AgGrid(
             id='f-member-list',
             columnDefs=[
@@ -50,6 +50,9 @@ def create_members_app(server):
             ]
         ),
         html.Button("Export to Excel", id='f-member-button'),
+        html.A(
+            html.Button("Home", id='f-member-home'), href='/'
+        ),
     ]
     
     register_member_callbacks(app, server)
