@@ -48,11 +48,23 @@ def get_names():
         for x in db.people.find({})
     )
 
-def get_committee_positions():
+def get_names_for_person_update():
     if not has_request_context():
         return []
 
     return list(
+        {
+            'label': f"{x['first_name']} {x['surname']}",
+            'value': str(x['_id']),
+        }
+        for x in db.people.find({})
+    )
+
+def get_committee_positions():
+    if not has_request_context():
+        return []
+
+    positions = list(
         {
             'label': f"{entry['season']} / {entry['position']}"
                 f" / {db.people.find_one({'_id': entry['holder']})['surname']}",
@@ -60,6 +72,8 @@ def get_committee_positions():
         }
         for entry in db.committee.find({})
     )
+    positions.reverse()
+    return positions
 
 def get_member_list(role, seasons, types, persons, columns):
     if not has_request_context() or role not in {"Committee", "Treasurer", "Public"}:
