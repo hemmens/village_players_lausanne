@@ -1,14 +1,9 @@
-MEMBER_TYPES = [
-    "Full",
-    "Honorary",
-    "Sep-Nov",
-    "Dec-Feb",
-    "Mar-May",    
-]
-SEASONS = [
-    "2026-27",
-    "2025-26",
-    "2024-25",
+GENDERS = [
+    "Male",
+    "Female",
+    "Non-binary",
+    "Other",
+    "Prefer not to say",
 ]
 MEMBER_LIST_COLUMNS = {
     'Season': 'season',
@@ -30,3 +25,15 @@ MEMBER_LIST_COLUMNS = {
     'Payment Amount': 'payment_amount',
     'Payment Date': 'payment_date',
 }
+MEMBER_TYPES = [
+    "Full",
+    "Honorary",
+    "Sep-Nov",
+    "Dec-Feb",
+    "Mar-May",    
+]
+SEASONS = [
+    "2026-27",
+    "2025-26",
+    "2024-25",
+]

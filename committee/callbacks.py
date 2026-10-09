@@ -1,9 +1,9 @@
-import pandas as pd
 from current_role import current_role
-from datetime import datetime
-from dash import Input, Output, State, dcc
-from database import delete_committee_member, get_committee_list, get_committee_positions, get_names, insert_committee_member
-from flask import session
+from dash import Input, Output, State
+from database import (
+    delete_committee_member, get_committee_list,
+    get_committee_positions, get_names, insert_committee_member
+)
 
 def register_committee_lookup_callbacks(app, server):
     @app.callback(
