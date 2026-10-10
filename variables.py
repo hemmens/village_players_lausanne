@@ -32,6 +32,17 @@ MEMBER_TYPES = [
     "Dec-Feb",
     "Mar-May",    
 ]
+ROLE_TYPES = [
+    'Cast',
+    'Director',
+    'Stage Manager',
+    'Lights',
+    'Sound',
+    'Front of House',
+    'Props',
+    'Costumes',
+    'Make-up',
+]
 SEASONS = [
     "2026-27",
     "2025-26",

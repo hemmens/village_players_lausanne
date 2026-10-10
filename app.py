@@ -8,6 +8,7 @@ from pymongo import MongoClient, ReturnDocument
 from pymongo.errors import PyMongoError, OperationFailure
 from pymongo.server_api import ServerApi
 
+from castcrew.layout import create_castcrew_insert_app, create_castcrew_update_app
 from committee.layout import (
     create_committee_insert_app, create_committee_lookup_app, create_committee_update_app
 )
@@ -276,6 +277,8 @@ committee_insert_app = create_committee_insert_app(app)
 committee_update_app = create_committee_update_app(app)
 people_insert_app = create_people_insert_app(app)
 people_update_app = create_people_update_app(app)
+castcrew_insert_app = create_castcrew_insert_app(app)
+castcrew_update_app = create_castcrew_update_app(app)
 
 if __name__ == "__main__":
     # app.run(host="127.0.0.1", port=int(os.environ.get("PORT", "5000")), debug=False)

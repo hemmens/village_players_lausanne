@@ -36,15 +36,15 @@ def create_productions_lookup_app(server):
         ),
         html.Div(
             [
-                dag.AgGrid(
-                    id='f-productions-costs',
-                    columnDefs=[
-                        {'field': 'date', 'width': 200},
-                        {'field': 'amount', 'width': 150},
-                        {'field': 'recipient', 'width': 300},
-                        {'field': 'description', 'flex': 1},
-                    ]
-                ),
+                # dag.AgGrid(
+                #     id='f-productions-costs',
+                #     columnDefs=[
+                #         {'field': 'date', 'width': 200},
+                #         {'field': 'amount', 'width': 150},
+                #         {'field': 'recipient', 'width': 300},
+                #         {'field': 'description', 'flex': 1},
+                #     ]
+                # ),
                 html.A(
                     html.Button("Insert", id='f-productions-insert'), href='/productions/insert/'
                 ),
