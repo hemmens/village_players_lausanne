@@ -26,7 +26,7 @@ def create_transactions_insert_app(server):
         html.Div(
             [
                 html.Label("Transaction Type: "),
-                dcc.Dropdown(id='a-transactions-type', options=variables.TRANS_TYPES),
+                dcc.Dropdown(id='a-transactions-type', options=variables.TRANSACTION_TYPES),
                 html.Label("Date: "),
                 dcc.DatePickerSingle(id='a-transactions-date'),
                 html.Label("Amount: "),

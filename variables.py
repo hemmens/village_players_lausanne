@@ -48,7 +48,7 @@ SEASONS = [
     "2025-26",
     "2024-25",
 ]
-TRANS_TYPES = [
+TRANSACTION_TYPES = [
     'Membership Subscription',
     'Production',
     "Entr'Acts",

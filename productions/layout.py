@@ -1,7 +1,7 @@
 from current_role import current_role
 from productions.callbacks import (
     register_productions_insert_callbacks, register_productions_lookup_callbacks,
-    register_productions_update_callbacks
+    register_productions_update_callbacks, register_festivals_insert_callbacks
 )
 import variables
 
@@ -46,7 +46,10 @@ def create_productions_lookup_app(server):
                 #     ]
                 # ),
                 html.A(
-                    html.Button("Insert", id='f-productions-insert'), href='/productions/insert/'
+                    html.Button("Insert Production", id='f-productions-production-insert'), href='/productions/production-insert/'
+                ),
+                html.A(
+                    html.Button("Insert Festival", id='f-productions-festival-insert'), href='/productions/festival-insert/'
                 ),
                 html.A(
                     html.Button("Update", id='f-productions-update'), href='/productions/update/'
@@ -66,11 +69,64 @@ def create_productions_lookup_app(server):
     return app
 
 
+def create_festivals_insert_app(server):
+    app = Dash(
+        __name__,
+        server=server,
+        url_base_pathname='/productions/festival-insert/',
+    )
+
+    role = current_role(server)
+
+    app.layout = [
+        dcc.Store(id='a-festivals-loaded', data=True),
+        dcc.Store(id='a-festivals-role', storage_type='session', data=role),
+        html.H1('Village Players Database Interface'),
+        html.H2('Festivals - Insert'),
+        html.Div(
+            "Committee access only", id='a-festivals-no-access',
+            hidden=(role in {"Committee", "Treasurer"})
+        ),
+        html.Div(
+            [
+                html.Label("Name: "),
+                dcc.Input(id='a-festivals-name', type='text'),
+                html.Label("Venue: "),
+                dcc.Input(id='a-festivals-venue', type='text'),
+                html.Label("Open Date: "),
+                dcc.DatePickerSingle(id='a-festivals-open'),
+                html.Label("Close Date: "),
+                dcc.DatePickerSingle(id='a-festivals-close'),
+                html.Div(id='a-festivals-message'),
+                html.Button("Insert New Festival", id='a-festivals-insert'),
+                html.A(
+                    html.Button("Lookup", id='a-festivals-lookup'), href='/productions/lookup/'
+                ),
+                html.A(
+                    html.Button("Insert Production", id='a-festivals-production-insert'), href='/productions/production-insert/'
+                ),
+                html.A(
+                    html.Button("Update", id='a-festivals-update'), href='/productions/update/'
+                ),
+            ],
+            id='a-festivals-access',
+            hidden=(role not in {"Committee", "Treasurer"})
+        ),
+        html.A(
+            html.Button("Home", id='a-festivals-home'), href='/'
+        ),
+    ]
+    
+    register_festivals_insert_callbacks(app, server)
+
+    return app
+
+
 def create_productions_insert_app(server):
     app = Dash(
         __name__,
         server=server,
-        url_base_pathname='/productions/insert/',
+        url_base_pathname='/productions/production-insert/',
     )
 
     role = current_role(server)
@@ -79,30 +135,39 @@ def create_productions_insert_app(server):
         dcc.Store(id='a-productions-loaded', data=True),
         dcc.Store(id='a-productions-role', storage_type='session', data=role),
         html.H1('Village Players Database Interface'),
-        html.H2('productions - Insert'),
+        html.H2('Productions - Insert'),
         html.Div(
-            "productions access only", id='a-productions-no-access',
-            hidden=(role in {"productions", "Treasurer"})
+            "Committee access only", id='a-productions-no-access',
+            hidden=(role in {"Committee", "Treasurer"})
         ),
         html.Div(
             [
-                html.Label("Select Person: ", id='a-productions-person-label'),
-                dcc.Dropdown(id='a-productions-person', options=[]),
-                html.Label("Select Season: ", id='a-productions-season-label'),
-                dcc.Dropdown(id='a-productions-season', options=seasons),
-                html.Label("Position: ", id='a-productions-position-label'),
-                dcc.Input(id='a-productions-position', type='text'),
+                html.Label("Name: "),
+                dcc.Input(id='a-productions-name', type='text'),
+                html.Label("Venue: "),
+                dcc.Input(id='a-productions-venue', type='text'),
+                html.Label("Author: "),
+                dcc.Input(id='a-productions-author', type='text'),
+                html.Label("Open Date: "),
+                dcc.DatePickerSingle(id='a-productions-open'),
+                html.Label("Close Date: "),
+                dcc.DatePickerSingle(id='a-productions-close'),
                 html.Div(id='a-productions-message'),
-                html.Button("Insert New productions Member", id='a-productions-insert'),
+                html.Label("Festival: "),
+                dcc.Dropdown(id='a-productions-festival', options=[]),
+                html.Button("Insert New Production", id='a-productions-insert'),
                 html.A(
                     html.Button("Lookup", id='a-productions-lookup'), href='/productions/lookup/'
+                ),
+                html.A(
+                    html.Button("Insert Festival", id='a-productions-festival-insert'), href='/productions/festival-insert/'
                 ),
                 html.A(
                     html.Button("Update", id='a-productions-update'), href='/productions/update/'
                 ),
             ],
             id='a-productions-access',
-            hidden=(role not in {"productions", "Treasurer"})
+            hidden=(role not in {"Committee", "Treasurer"})
         ),
         html.A(
             html.Button("Home", id='a-productions-home'), href='/'
@@ -127,26 +192,30 @@ def create_productions_update_app(server):
         dcc.Store(id='u-productions-loaded', data=True),
         dcc.Store(id='u-productions-role', storage_type='session', data=role),
         html.H1('Village Players Database Interface'),
-        html.H2('productions - Update'),
+        html.H2('Productions - Update'),
         html.Div(
-            "productions access only", id='u-productions-no-access',
-            hidden=(role in {"productions", "Treasurer"})
+            "Committee access only", id='u-productions-no-access',
+            hidden=(role in {"Committee", "Treasurer"})
         ),
         html.Div(
             [
                 html.Label("Select productions Position: ", id='u-productions-label'),
                 dcc.Dropdown(id='u-productions-position', options=[]),
                 html.Div(id='u-productions-message'),
-                html.Button("Delete productions Member", id='u-productions-delete'),
+                html.Button("Update Production", id='u-productions-update'),
+                html.Button("Delete Production", id='u-productions-delete'),
                 html.A(
                     html.Button("Lookup", id='u-productions-lookup'), href='/productions/lookup/'
                 ),
                 html.A(
-                    html.Button("Insert", id='u-productions-insert'), href='/productions/insert/'
+                    html.Button("Insert Production", id='u-productions-production-insert'), href='/productions/production-insert/'
+                ),
+                html.A(
+                    html.Button("Insert Festival", id='u-productions-festival-insert'), href='/productions/festival-insert/'
                 ),
             ],
             id='u-productions-access',
-            hidden=(role not in {"productions", "Treasurer"})
+            hidden=(role not in {"Committee", "Treasurer"})
         ),
         html.A(
             html.Button("Home", id='u-productions-home'), href='/'

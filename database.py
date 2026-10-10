@@ -56,6 +56,18 @@ def get_names():
         for x in db.people.find({})
     )
 
+def get_festivals():
+    if not has_request_context():
+        return []
+
+    return list(
+        {
+            'label': f"{f['title']} ({f['open_date'].year})",
+            'value': str(f['_id'])
+        }
+        for f in db.festivals.find({})
+    )
+
 def get_productions():
     if not has_request_context():
         return []
@@ -553,3 +565,45 @@ def delete_castcrew(castcrew_id):
         return "Role not found" # {"error": "Committee member not found"}, 404
 
     return "Role deleted successfully" # {"ok": True}, 200
+
+def insert_festival(name, venue, open, close):
+    # if not has_request_context():
+    #     return {"error": "No request context."}, 400
+
+    if not name or not open or not close:
+        return "Name and performance dates are required." # {"error": "Person, season, and position are required."}, 400
+
+    festival_payload = {'title': name}
+
+    if db.festivals.find_one(festival_payload):
+        return "Festival name already exists" # {"error": "Committee member already exists"}, 400
+
+    festival_payload['open_date'] = convert_date(open)
+    festival_payload['close_date'] = convert_date(close)
+    if venue:
+        festival_payload['venue'] = venue
+
+    new_festival = db.festivals.insert_one(festival_payload)
+
+    return f"New festival: {str(new_festival.inserted_id)}" # {"ok": True}, 201
+
+def insert_production(name, venue, open, close):
+    # if not has_request_context():
+    #     return {"error": "No request context."}, 400
+
+    if not name or not open or not close:
+        return "Name and performance dates are required." # {"error": "Person, season, and position are required."}, 400
+
+    festival_payload = {'title': name}
+
+    if db.festivals.find_one(festival_payload):
+        return "Festival name already exists" # {"error": "Committee member already exists"}, 400
+
+    festival_payload['open_date'] = convert_date(open)
+    festival_payload['close_date'] = convert_date(close)
+    if venue:
+        festival_payload['venue'] = venue
+
+    new_festival = db.festivals.insert_one(festival_payload)
+
+    return f"New festival: {str(new_festival.inserted_id)}" # {"ok": True}, 201

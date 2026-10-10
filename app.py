@@ -14,7 +14,10 @@ from committee.layout import (
 )
 from members.layout import create_members_lookup_app
 from people.layout import create_people_insert_app, create_people_update_app
-from productions.layout import create_productions_lookup_app
+from productions.layout import (
+    create_productions_lookup_app, create_festivals_insert_app,
+    create_productions_insert_app, create_productions_update_app
+)
 from transactions.layout import create_transactions_insert_app
 
 app = Flask(__name__)
@@ -273,6 +276,8 @@ def no_store_for_auth_pages(response):
 
 members_lookup_app = create_members_lookup_app(app)
 productions_lookup_app = create_productions_lookup_app(app)
+festivals_insert_app = create_festivals_insert_app(app)
+productions_insert_app = create_productions_insert_app(app)
 committee_lookup_app = create_committee_lookup_app(app)
 committee_insert_app = create_committee_insert_app(app)
 committee_update_app = create_committee_update_app(app)
