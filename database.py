@@ -116,6 +116,20 @@ def get_committee_positions():
     positions.reverse()
     return positions
 
+def get_castcrew():
+    if not has_request_context():
+        return []
+
+    return list(
+        {
+            'label': f"{db.productions.find_one({'_id': x['production']})['title']}"
+                    f" / {db.people.find_one({'_id': x['person']})['surname']}"
+                    f" / {x['role']}",
+            'value': str(x['_id']),
+        }
+        for x in db.castcrew.find({})
+    )
+
 def update_form_fill_in_value(collection, field, document_id):
     if not has_request_context():
         return ""
@@ -470,3 +484,72 @@ def delete_person(person_id):
         return "Person not found" # {"error": "Committee member not found"}, 404
 
     return "Person deleted successfully" # {"ok": True}, 200
+
+def insert_castcrew(person_id, production_id, role, name):
+    # if not has_request_context():
+    #     return {"error": "No request context."}, 400
+
+    if not person_id or not production_id or not role:
+        return "Person, Production, and Role are required." # {"error": "Person, season, and position are required."}, 400
+
+    cast_crew_payload = {
+        'person': ObjectId(person_id.split('|')[0]),
+        'production': ObjectId(production_id),
+        'role': role
+    }
+
+    if db.castcrew.find_one(cast_crew_payload):
+        return "Cast or Crew Member already exists" # {"error": "Committee member already exists"}, 400
+
+    if name:
+        cast_crew_payload['role_name'] = name
+
+    new_castcrew = db.castcrew.insert_one(cast_crew_payload)
+
+    return f"New Cast or Crew Member: {str(new_castcrew.inserted_id)}" # {"ok": True}, 201
+
+def update_castcrew(castcrew_id, role_name):
+    if not has_request_context():
+        return "" # {"error": "No request context."}, 400
+
+    if not castcrew_id:
+        return "Role ID is required." # {"error": "Committee member ID is required."}, 400
+
+    try:
+        castcrew_id = ObjectId(castcrew_id)
+    except Exception as e:
+        return f"Invalid role ID: {e}" # {"error": f"Invalid committee member ID: {e}"}, 400
+
+    update_payload = {
+        '$set': {},
+        '$unset': {}
+    }
+
+    if role_name:
+        update_payload['$set']['role_name'] = role_name
+    else:
+        update_payload['$unset']['role_name'] = ""
+
+    result = db.castcrew.update_one({'_id': castcrew_id}, update_payload)
+    if result.modified_count == 0:
+        return "Role not found" # {"error": "Committee member not found"}, 404
+
+    return "Role updated successfully" # {"ok": True}, 200
+
+def delete_castcrew(castcrew_id):
+    # if not has_request_context():
+    #     return {"error": "No request context."}, 400
+
+    if not castcrew_id:
+        return "Role ID is required." # {"error": "Committee member ID is required."}, 400
+
+    try:
+        castcrew_id = ObjectId(castcrew_id)
+    except Exception as e:
+        return f"Invalid role ID: {e}" # {"error": f"Invalid committee member ID: {e}"}, 400
+
+    result = db.castcrew.delete_one({'_id': castcrew_id})
+    if result.deleted_count == 0:
+        return "Role not found" # {"error": "Committee member not found"}, 404
+
+    return "Role deleted successfully" # {"ok": True}, 200

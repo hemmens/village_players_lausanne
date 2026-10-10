@@ -6,11 +6,7 @@ update_mapping = {
     },
     'castcrew': {
         'value': {'role-name': 'role_name'},
-        'date': [],
-        'entry_lambda': lambda productions, people, x:
-                            f"{productions.find_one({'_id': x['production']})['title']}"
-                            f" / {people.find_one({'_id': x['person']})['surname']}"
-                            f" / {x['role']}"
+        'date': {},
     },
     'festivals': {
         'value': {'venue': 'venue'},
