@@ -5,7 +5,7 @@ from dash import Input, Output, State, dcc
 from database import get_member_list, get_names
 from variables import MEMBER_LIST_COLUMNS
 
-def register_member_callbacks(app, server):
+def register_member_lookup_callbacks(app, server):
     @app.callback(
         Output('f-member-role', 'data'),
         Input('f-member-loaded', 'data'),

@@ -1,5 +1,5 @@
 from current_role import current_role
-from members.callbacks import register_member_callbacks
+from members.callbacks import register_member_lookup_callbacks
 import variables
 
 from dash import Dash, html, dcc
@@ -9,11 +9,11 @@ seasons = variables.SEASONS
 mtypes = variables.MEMBER_TYPES
 mcols = list(variables.MEMBER_LIST_COLUMNS.keys())
 
-def create_members_app(server):
+def create_members_lookup_app(server):
     app = Dash(
         __name__,
         server=server,
-        url_base_pathname='/members/',
+        url_base_pathname='/members/lookup/',
     )
 
     role = current_role(server)
@@ -55,6 +55,6 @@ def create_members_app(server):
         ),
     ]
     
-    register_member_callbacks(app, server)
+    register_member_lookup_callbacks(app, server)
 
     return app
