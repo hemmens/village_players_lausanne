@@ -48,3 +48,13 @@ SEASONS = [
     "2025-26",
     "2024-25",
 ]
+TRANS_TYPES = [
+    'Membership Subscription',
+    'Production',
+    "Entr'Acts",
+    'Storage',
+    'Materials',
+    'Subscriptions',
+    'Bank Charges',
+    'Other',
+]
