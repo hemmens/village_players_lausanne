@@ -40,18 +40,17 @@ def register_member_lookup_callbacks(app, server):
 
     @app.callback(
         Output('f-member-list', 'columnDefs'),
+        Input('f-member-columns', 'value'),
         Input('f-member-role', 'data'),
     )
-    def update_columns_value(role):
+    def update_column_defs(columns, role):
         return [
                 {'field': 'season', 'headerName': 'Season'}, 
                 {'field': 'first_name', 'headerName': 'First Name'}, 
                 {'field': 'surname', 'headerName': 'Surname'},
             ] if role not in {"Committee", "Treasurer"} else [
-                {'field': 'type', 'headerName': 'Membership Type'},
-                {'field': 'first_name', 'headerName': 'First Name'},
-                {'field': 'surname', 'headerName': 'Surname'},
-                {'field': 'email', 'headerName': 'Email'}
+                {'field': MEMBER_LIST_COLUMNS.get(col), 'headerName': col}
+                for col in columns
             ]
 
     @app.callback(
@@ -64,16 +63,6 @@ def register_member_lookup_callbacks(app, server):
     )
     def update_row_data(role, seasons, types, persons, columns):
         return get_member_list(role, seasons, types, persons, columns)
-
-    @app.callback(
-        Output('f-member-list', 'columnDefs'),
-        Input('f-member-columns', 'value'),
-    )
-    def update_column_defs(columns):
-        return [
-            {'field': MEMBER_LIST_COLUMNS.get(col), 'headerName': col}
-            for col in columns
-        ]
 
     @app.callback(
         Output('f-member-download', 'data'),

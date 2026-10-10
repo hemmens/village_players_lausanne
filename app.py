@@ -13,6 +13,7 @@ from committee.layout import (
 )
 from members.layout import create_members_lookup_app
 from people.layout import create_people_insert_app, create_people_update_app
+from productions.layout import create_productions_lookup_app
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", secrets.token_hex(32))
@@ -269,6 +270,7 @@ def no_store_for_auth_pages(response):
     return response
 
 members_lookup_app = create_members_lookup_app(app)
+productions_lookup_app = create_productions_lookup_app(app)
 committee_lookup_app = create_committee_lookup_app(app)
 committee_insert_app = create_committee_insert_app(app)
 committee_update_app = create_committee_update_app(app)

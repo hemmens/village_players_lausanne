@@ -56,6 +56,39 @@ def get_names():
         for x in db.people.find({})
     )
 
+def get_productions():
+    if not has_request_context():
+        return []
+
+    festivals = {
+        str(f['_id']): {
+            'title': f['title'],
+            'date': f['open_date'],
+        }
+        for f in db.festivals.find({})
+    }
+    productions = {
+        str(p['_id']): {
+            'title': p['title'],
+            'date': p['open_date']
+                if p.get('open_date') else
+                festivals[str(p['festival'])]['date'],
+        }
+        for p in db.productions.find({})
+    }
+
+    shows = pd.concat([
+        pd.DataFrame.from_dict(festivals, orient='index'),
+        pd.DataFrame.from_dict(productions, orient='index'),
+    ])
+    shows.sort_values('date', ascending=False, inplace=True)
+    shows.reset_index(inplace=True, names='db_id')
+    shows['label'] = shows.apply(
+        lambda row: {'label': f"{row.title} ({row.date.year})", 'value': row.db_id}, axis=1
+    )
+
+    return shows['label'].to_list()
+
 def get_names_for_person_update():
     if not has_request_context():
         return []
@@ -165,6 +198,56 @@ def get_member_list(role, seasons, types, persons, columns):
     members.sort_values(['season', 'surname'], inplace=True)
     
     return members.to_dict('records')
+
+def get_production_details(production_id):
+    if not production_id:
+        return pd.DataFrame().to_dict('records')
+
+    festival = db.festivals.find_one({'_id': ObjectId(production_id)})
+    if festival:
+        productions = db.productions.find({'festival': ObjectId(production_id)})
+        return pd.DataFrame(
+            [
+                {'detail': 'Title', 'info': festival['title']},
+                {'detail': 'Opening Date', 'info': festival['open_date'].date().strftime('%d %B %Y')},
+                {'detail': 'Closing Date', 'info': festival['close_date'].date().strftime('%d %B %Y')},
+                {'detail': 'Venue', 'info': festival['venue']}
+            ] + [
+                {'detail': 'Play', 'info': f"{production['title']} by {production['author']}"}
+                for production in productions
+            ]
+        ).to_dict('records')
+
+    production = db.productions.find_one({'_id': ObjectId(production_id)})
+    if not production:
+        return pd.DataFrame().to_dict('records')
+
+    row_data = [
+        {'detail': 'Title', 'info': production['title']},
+        {'detail': 'Author', 'info': production['author']},
+    ]
+
+    if production.get('festival'):
+        production = db.festivals.find_one({'_id': production['festival']})
+
+    row_data += [
+        {'detail': 'Opening Date', 'info': production['open_date'].date().strftime('%d %B %Y')},
+        {'detail': 'Closing Date', 'info': production['close_date'].date().strftime('%d %B %Y')},
+        {'detail': 'Venue', 'info': production['venue']}
+    ]
+
+    castcrew = db.castcrew.find({'production': ObjectId(production_id)})
+    for participant in castcrew:
+        character = participant.get('role_name')
+        person = db.people.find_one({'_id': participant['person']})
+        row_data.append(
+            {
+                'detail': participant['role'] if not character else character,
+                'info': f"{person['first_name']} {person['surname']}",
+            }
+        )
+
+    return pd.DataFrame(row_data).to_dict('records')
 
 def get_committee_list(role, seasons):
     if not has_request_context() or role not in {"Committee", "Treasurer", "Public"}:
