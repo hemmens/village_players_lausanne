@@ -24,13 +24,13 @@ def create_members_lookup_app(server):
         html.H1('Village Players Database Interface'),
         html.H2('Members'),
         dcc.Download(id='f-member-download'),
-        html.Label("Select Seasons: ", id='f-member-seasons-label'),
+        html.Label("Select Seasons: "),
         dcc.Dropdown(id='f-member-seasons', multi=True, options=seasons, value=[seasons[0]]),
         html.Div(
             [
-                html.Label("Select Membership Types: ", id='f-member-types-label'),
+                html.Label("Select Membership Types: "),
                 dcc.Dropdown(id='f-member-types', multi=True, options=mtypes, value=mtypes),
-                html.Label("Select Columns: ", id='f-member-columns-label'),
+                html.Label("Select Columns: "),
                 dcc.Dropdown(
                     id='f-member-columns', multi=True, options=mcols,
                     value=['Season', 'First Name', 'Surname']
@@ -39,7 +39,7 @@ def create_members_lookup_app(server):
             id='f-member-access',
             hidden=(role not in {"Committee", "Treasurer"})
         ),
-        html.Label("Select People: ", id='f-member-persons-label'),
+        html.Label("Select People: "),
         dcc.Dropdown(id='f-member-persons', multi=True, options=[], value=[]),
         dag.AgGrid(
             id='f-member-list',

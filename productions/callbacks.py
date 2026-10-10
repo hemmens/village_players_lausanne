@@ -1,0 +1,113 @@
+from current_role import current_role
+from dash import Input, Output, State
+from database import get_productions, get_production_details
+
+def register_productions_lookup_callbacks(app, server):
+    @app.callback(
+        Output('f-productions-role', 'data'),
+        Input('f-productions-loaded', 'data'),
+    )
+    def update_role(loaded):
+        return current_role(server)
+    
+    @app.callback(
+        Output('f-productions-access', 'hidden'),
+        Input('f-productions-role', 'data'),
+    )
+    def update_access_hidden(role):
+        return role not in {"Committee", "Treasurer"}
+
+    @app.callback(
+        Output('f-productions-select', 'options'),
+        Input('f-productions-loaded', 'data'),
+    )
+    def update_productions(loaded):
+        return get_productions()
+
+    @app.callback(
+        Output('f-productions-details', 'rowData'),
+        Input('f-productions-select', 'value'),
+    )
+    def update_row_data(production_id):
+        return get_production_details(production_id)
+
+
+def register_productions_insert_callbacks(app, server):
+    @app.callback(
+        Output('a-productions-role', 'data'),
+        Input('a-productions-loaded', 'data'),
+    )
+    def update_role(loaded):
+        return current_role(server)
+    
+    @app.callback(
+        Output('a-productions-access', 'hidden'),
+        Input('a-productions-role', 'data'),
+    )
+    def update_access_hidden(role):
+        return role not in {"Committee", "Treasurer"}
+    
+    @app.callback(
+        Output('a-productions-no-access', 'hidden'),
+        Input('a-productions-role', 'data'),
+    )
+    def update_no_access_hidden(role):
+        return role in {"Committee", "Treasurer"}
+
+    # @app.callback(
+    #     Output('a-productions-person', 'options'),
+    #     Input('a-productions-loaded', 'data'),
+    # )
+    # def update_names(loaded):
+    #     return get_names()
+
+    # @app.callback(
+    #     Output('a-productions-message', 'children'),
+    #     Input('a-productions-insert', 'n_clicks'),
+    #     State('a-productions-person', 'value'),
+    #     State('a-productions-season', 'value'),
+    #     State('a-productions-position', 'value'),
+    #     prevent_initial_call=True
+    # )
+    # def new_productions_member(n_clicks, person, season, position):
+    #     person_id = person.split('|')[0] if person else None
+    #     return insert_productions_member(person_id, season, position)
+
+
+def register_productions_update_callbacks(app, server):
+    @app.callback(
+        Output('u-productions-role', 'data'),
+        Input('u-productions-loaded', 'data'),
+    )
+    def update_role(loaded):
+        return current_role(server)
+    
+    @app.callback(
+        Output('u-productions-access', 'hidden'),
+        Input('u-productions-role', 'data'),
+    )
+    def update_access_hidden(role):
+        return role not in {"productions", "Treasurer"}
+    
+    @app.callback(
+        Output('u-productions-no-access', 'hidden'),
+        Input('u-productions-role', 'data'),
+    )
+    def update_no_access_hidden(role):
+        return role in {"productions", "Treasurer"}
+
+    # @app.callback(
+    #     Output('u-productions-position', 'options'),
+    #     Input('u-productions-loaded', 'data'),
+    # )
+    # def update_names(loaded):
+    #     return get_productions_positions()
+
+    # @app.callback(
+    #     Output('u-productions-message', 'children'),
+    #     Input('u-productions-delete', 'n_clicks'),
+    #     State('u-productions-position', 'value'),
+    #     prevent_initial_call=True
+    # )
+    # def remove_productions_member(n_clicks, position):
+    #     return delete_productions_member(position)

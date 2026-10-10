@@ -24,7 +24,7 @@ def create_committee_lookup_app(server):
         dcc.Store(id='f-committee-role', storage_type='session', data=role),
         html.H1('Village Players Database Interface'),
         html.H2('Committee'),
-        html.Label("Select Seasons: ", id='f-committee-seasons-label'),
+        html.Label("Select Seasons: "),
         dcc.Dropdown(id='f-committee-seasons', multi=True, options=seasons, value=[seasons[0]]),
         dag.AgGrid(
             id='f-committee-list',
@@ -79,11 +79,11 @@ def create_committee_insert_app(server):
         ),
         html.Div(
             [
-                html.Label("Select Person: ", id='a-committee-person-label'),
+                html.Label("Select Person: "),
                 dcc.Dropdown(id='a-committee-person', options=[]),
-                html.Label("Select Season: ", id='a-committee-season-label'),
+                html.Label("Select Season: "),
                 dcc.Dropdown(id='a-committee-season', options=seasons),
-                html.Label("Position: ", id='a-committee-position-label'),
+                html.Label("Position: "),
                 dcc.Input(id='a-committee-position', type='text'),
                 html.Div(id='a-committee-message'),
                 html.Button("Insert New Committee Member", id='a-committee-insert'),
@@ -127,7 +127,7 @@ def create_committee_update_app(server):
         ),
         html.Div(
             [
-                html.Label("Select Committee Position: ", id='u-committee-label'),
+                html.Label("Select Committee Position: "),
                 dcc.Dropdown(id='u-committee-position', options=[]),
                 html.Div(id='u-committee-message'),
                 html.Button("Delete Committee Member", id='u-committee-delete'),
