@@ -15,6 +15,7 @@ from committee.layout import (
 from members.layout import create_members_lookup_app
 from people.layout import create_people_insert_app, create_people_update_app
 from productions.layout import create_productions_lookup_app
+from transactions.layout import create_transactions_insert_app
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", secrets.token_hex(32))
@@ -279,6 +280,7 @@ people_insert_app = create_people_insert_app(app)
 people_update_app = create_people_update_app(app)
 castcrew_insert_app = create_castcrew_insert_app(app)
 castcrew_update_app = create_castcrew_update_app(app)
+transactions_insert_app = create_transactions_insert_app(app)
 
 if __name__ == "__main__":
     # app.run(host="127.0.0.1", port=int(os.environ.get("PORT", "5000")), debug=False)
