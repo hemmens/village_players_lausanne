@@ -33,22 +33,35 @@ def create_people_insert_app(server):
                 dcc.Input(id='a-people-address', type='text'),
                 html.Label("Postcode: "),
                 dcc.Input(id='a-people-postcode', type='text'),
-                html.Label("Address is Private: "),
-                dcc.Input(id='a-people-address-private', type='checkbox'),
+                dcc.Checklist(
+                    id='a-people-address-private',
+                    options=[{'label': 'Address is Private', 'value': 'private'}]
+                ),
                 html.Label("Home Phone: "),
                 dcc.Input(id='a-people-home-phone', type='text'),
                 html.Label("Home Phone is Private: "),
-                dcc.Input(id='a-people-home-phone-private', type='checkbox'),
+                dcc.Checklist(
+                    id='a-people-home-phone-private',
+                    options=[{'label': 'Home Phone is Private', 'value': 'private'}]
+                ),
                 html.Label("Mobile: "),
                 dcc.Input(id='a-people-mobile', type='text'),
                 html.Label("Mobile is Private: "),
-                dcc.Input(id='a-people-mobile-private', type='checkbox'),
+                dcc.Checklist(
+                    id='a-people-mobile-private',
+                    options=[{'label': 'Mobile is Private', 'value': 'private'}]
+                ),
                 html.Label("Email: "),
                 dcc.Input(id='a-people-email', type='text'),
                 html.Label("Email is Private: "),
-                dcc.Input(id='a-people-email-private', type='checkbox'),
+                dcc.Checklist(
+                    id='a-people-email-private',
+                    options=[{'label': 'Email is Private', 'value': 'private'}]
+                ),
                 html.Label("Gender: "),
-                dcc.Dropdown(id='a-people-gender', options=variables.GENDERS),
+                dcc.Dropdown(id='a-people-gender', options=[
+                    {'label': gender.title(), 'value': gender} for gender in variables.GENDERS
+                ]),
                 html.Label("GDPR Signed On: "),
                 dcc.DatePickerSingle(id='a-people-gdpr'),
                 html.Label("Committee Email: "),
@@ -98,22 +111,32 @@ def create_people_update_app(server):
                 dcc.Input(id='u-people-address', type='text'),
                 html.Label("Postcode: "),
                 dcc.Input(id='u-people-postcode', type='text'),
-                html.Label("Address is Private: "),
-                dcc.Input(id='u-people-address-private', type='checkbox'),
+                dcc.Checklist(
+                    id='u-people-address-private',
+                    options=[{'label': 'Address is Private', 'value': 'private'}]
+                ),
                 html.Label("Home Phone: "),
                 dcc.Input(id='u-people-home-phone', type='text'),
-                html.Label("Home Phone is Private: "),
-                dcc.Input(id='u-people-home-phone-private', type='checkbox'),
+                dcc.Checklist(
+                    id='u-people-home-phone-private',
+                    options=[{'label': 'Home Phone is Private', 'value': 'private'}]
+                ),
                 html.Label("Mobile: "),
                 dcc.Input(id='u-people-mobile', type='text'),
-                html.Label("Mobile is Private: "),
-                dcc.Input(id='u-people-mobile-private', type='checkbox'),
+                dcc.Checklist(
+                    id='u-people-mobile-private',
+                    options=[{'label': 'Mobile is Private', 'value': 'private'}]
+                ),
                 html.Label("Email: "),
                 dcc.Input(id='u-people-email', type='text'),
-                html.Label("Email is Private: "),
-                dcc.Input(id='u-people-email-private', type='checkbox'),
+                dcc.Checklist(
+                    id='u-people-email-private',
+                    options=[{'label': 'Email is Private', 'value': 'private'}]
+                ),
                 html.Label("Gender: "),
-                dcc.Dropdown(id='u-people-gender', options=variables.GENDERS),
+                dcc.Dropdown(id='u-people-gender', options=[
+                    {'label': gender.title(), 'value': gender} for gender in variables.GENDERS
+                ]),
                 html.Label("GDPR Signed On: "),
                 dcc.DatePickerSingle(id='u-people-gdpr'),
                 html.Label("Committee Email: "),

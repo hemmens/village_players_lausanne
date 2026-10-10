@@ -1,9 +1,9 @@
 GENDERS = [
-    "Male",
-    "Female",
-    "Non-binary",
-    "Other",
-    "Prefer not to say",
+    "male",
+    "female",
+    "non-binary",
+    "other",
+    "prefer not to say",
 ]
 MEMBER_LIST_COLUMNS = {
     'Season': 'season',

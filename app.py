@@ -11,7 +11,8 @@ from pymongo.server_api import ServerApi
 from committee.layout import (
     create_committee_insert_app, create_committee_lookup_app, create_committee_update_app
 )
-from members.layout import create_members_app
+from members.layout import create_members_lookup_app
+from people.layout import create_people_insert_app, create_people_update_app
 
 app = Flask(__name__)
 app.secret_key = os.environ.get("FLASK_SECRET_KEY", secrets.token_hex(32))
@@ -267,10 +268,12 @@ def no_store_for_auth_pages(response):
         response.headers["Cache-Control"] = "no-store"
     return response
 
-members_app = create_members_app(app)
+members_lookup_app = create_members_lookup_app(app)
 committee_lookup_app = create_committee_lookup_app(app)
 committee_insert_app = create_committee_insert_app(app)
 committee_update_app = create_committee_update_app(app)
+people_insert_app = create_people_insert_app(app)
+people_update_app = create_people_update_app(app)
 
 if __name__ == "__main__":
     # app.run(host="127.0.0.1", port=int(os.environ.get("PORT", "5000")), debug=False)
