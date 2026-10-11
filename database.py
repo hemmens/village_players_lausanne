@@ -44,6 +44,9 @@ def convert_date(date_str):
         int(date[0]), int(date[1]), int(date[2])
     )
 
+def find_collection_link(document_id, collection, field):
+    return collection.find_one({field: document_id})
+
 def get_names():
     if not has_request_context():
         return []
@@ -172,8 +175,7 @@ def update_form_fill_in_value(collection, field, document_id):
 
     return value
 
-def find_collection_link(document_id, collection, field):
-    return collection.find_one({field: document_id})
+# ---- MEMBERS ----
 
 def get_member_list(role, seasons, types, persons, columns):
     if not has_request_context() or role not in {"Committee", "Treasurer", "Public"}:
@@ -225,6 +227,8 @@ def get_member_list(role, seasons, types, persons, columns):
     
     return members.to_dict('records')
 
+# ---- PRODUCTIONS ----
+
 def get_production_details(production_id):
     if not production_id:
         return pd.DataFrame().to_dict('records')
@@ -237,7 +241,7 @@ def get_production_details(production_id):
                 {'detail': 'Title', 'info': festival['title']},
                 {'detail': 'Opening Date', 'info': festival['open_date'].date().strftime('%d %B %Y')},
                 {'detail': 'Closing Date', 'info': festival['close_date'].date().strftime('%d %B %Y')},
-                {'detail': 'Venue', 'info': festival['venue']}
+                {'detail': 'Venue', 'info': festival.get('venue', '')}
             ] + [
                 {'detail': 'Play', 'info': f"{production['title']} by {production['author']}"}
                 for production in productions
@@ -250,17 +254,21 @@ def get_production_details(production_id):
 
     row_data = [
         {'detail': 'Title', 'info': production['title']},
-        {'detail': 'Author', 'info': production['author']},
+        {'detail': 'Author', 'info': production.get('author', '')},
     ]
 
+    festival_name = None
     if production.get('festival'):
         production = db.festivals.find_one({'_id': production['festival']})
+        festival_name = production['title']
 
     row_data += [
         {'detail': 'Opening Date', 'info': production['open_date'].date().strftime('%d %B %Y')},
         {'detail': 'Closing Date', 'info': production['close_date'].date().strftime('%d %B %Y')},
-        {'detail': 'Venue', 'info': production['venue']}
+        {'detail': 'Venue', 'info': production.get('venue', '')}
     ]
+    if festival_name is not None:
+        row_data.append({'detail': 'Festival', 'info': festival_name})
 
     castcrew = db.castcrew.find({'production': ObjectId(production_id)})
     for participant in castcrew:
@@ -274,6 +282,66 @@ def get_production_details(production_id):
         )
 
     return pd.DataFrame(row_data).to_dict('records')
+
+def insert_festival(name, venue, open, close):
+    # if not has_request_context():
+    #     return {"error": "No request context."}, 400
+
+    if not name or not open or not close:
+        return "Name and performance dates are required." # {"error": "Person, season, and position are required."}, 400
+
+    festival_payload = {'title': name}
+
+    if db.festivals.find_one(festival_payload):
+        return "Festival name already exists" # {"error": "Committee member already exists"}, 400
+
+    festival_payload['open_date'] = convert_date(open)
+    festival_payload['close_date'] = convert_date(close)
+    if venue:
+        festival_payload['venue'] = venue
+
+    new_festival = db.festivals.insert_one(festival_payload)
+
+    return f"New festival: {str(new_festival.inserted_id)}" # {"ok": True}, 201
+
+def insert_production(name, venue, author, open, close, festival_id):
+    # if not has_request_context():
+    #     return {"error": "No request context."}, 400
+
+    if not name or not (festival_id or (open and close)):
+        return "Name and either performance dates or festival are required." # {"error": "Person, season, and position are required."}, 400
+
+    production_payload = {'title': name}
+    if festival_id:
+        try:
+            festival_id = ObjectId(festival_id)
+        except Exception as e:
+            return f"Invalid festival ID: {e}" # {"error": f"Invalid person ID: {e}"}, 400
+
+        production_payload['festival'] = festival_id
+        production_filter = production_payload.copy()
+    else:
+        production_payload['open_date'] = convert_date(open)
+        production_payload['close_date'] = convert_date(close)
+        production_filter = {
+            'title': production_payload['title'],
+            'open_date': {'$lte': production_payload['close_date']},
+            'close_date': {'$gte': production_payload['open_date']},
+        }
+
+    if db.productions.find_one(production_filter):
+        return "Production already exists" # {"error": "Committee member already exists"}, 400
+
+    if venue:
+        production_payload['venue'] = venue
+    if author:
+        production_payload['author'] = author
+
+    new_production = db.productions.insert_one(production_payload)
+
+    return f"New production: {str(new_production.inserted_id)}" # {"ok": True}, 201
+
+# ---- COMMITTEE ----
 
 def get_committee_list(role, seasons):
     if not has_request_context() or role not in {"Committee", "Treasurer", "Public"}:
@@ -334,6 +402,8 @@ def delete_committee_member(committee_id):
         return "Committee member not found" # {"error": "Committee member not found"}, 404
 
     return "Committee member deleted successfully" # {"ok": True}, 200
+
+# ---- PEOPLE ----
 
 def insert_person(first_name, surname, address, postcode, address_private, home_phone,
         home_phone_private, mobile, mobile_private, email, email_private, gender,
@@ -497,6 +567,8 @@ def delete_person(person_id):
 
     return "Person deleted successfully" # {"ok": True}, 200
 
+# ---- CAST & CREW ----
+
 def insert_castcrew(person_id, production_id, role, name):
     # if not has_request_context():
     #     return {"error": "No request context."}, 400
@@ -520,7 +592,7 @@ def insert_castcrew(person_id, production_id, role, name):
 
     return f"New Cast or Crew Member: {str(new_castcrew.inserted_id)}" # {"ok": True}, 201
 
-def update_castcrew(castcrew_id, role_name):
+def update_castcrew(castcrew_id, name):
     if not has_request_context():
         return "" # {"error": "No request context."}, 400
 
@@ -537,8 +609,8 @@ def update_castcrew(castcrew_id, role_name):
         '$unset': {}
     }
 
-    if role_name:
-        update_payload['$set']['role_name'] = role_name
+    if name:
+        update_payload['$set']['role_name'] = name
     else:
         update_payload['$unset']['role_name'] = ""
 
@@ -565,45 +637,3 @@ def delete_castcrew(castcrew_id):
         return "Role not found" # {"error": "Committee member not found"}, 404
 
     return "Role deleted successfully" # {"ok": True}, 200
-
-def insert_festival(name, venue, open, close):
-    # if not has_request_context():
-    #     return {"error": "No request context."}, 400
-
-    if not name or not open or not close:
-        return "Name and performance dates are required." # {"error": "Person, season, and position are required."}, 400
-
-    festival_payload = {'title': name}
-
-    if db.festivals.find_one(festival_payload):
-        return "Festival name already exists" # {"error": "Committee member already exists"}, 400
-
-    festival_payload['open_date'] = convert_date(open)
-    festival_payload['close_date'] = convert_date(close)
-    if venue:
-        festival_payload['venue'] = venue
-
-    new_festival = db.festivals.insert_one(festival_payload)
-
-    return f"New festival: {str(new_festival.inserted_id)}" # {"ok": True}, 201
-
-def insert_production(name, venue, open, close):
-    # if not has_request_context():
-    #     return {"error": "No request context."}, 400
-
-    if not name or not open or not close:
-        return "Name and performance dates are required." # {"error": "Person, season, and position are required."}, 400
-
-    festival_payload = {'title': name}
-
-    if db.festivals.find_one(festival_payload):
-        return "Festival name already exists" # {"error": "Committee member already exists"}, 400
-
-    festival_payload['open_date'] = convert_date(open)
-    festival_payload['close_date'] = convert_date(close)
-    if venue:
-        festival_payload['venue'] = venue
-
-    new_festival = db.festivals.insert_one(festival_payload)
-
-    return f"New festival: {str(new_festival.inserted_id)}" # {"ok": True}, 201

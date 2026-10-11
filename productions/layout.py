@@ -152,9 +152,9 @@ def create_productions_insert_app(server):
                 dcc.DatePickerSingle(id='a-productions-open'),
                 html.Label("Close Date: "),
                 dcc.DatePickerSingle(id='a-productions-close'),
-                html.Div(id='a-productions-message'),
                 html.Label("Festival: "),
                 dcc.Dropdown(id='a-productions-festival', options=[]),
+                html.Div(id='a-productions-message'),
                 html.Button("Insert New Production", id='a-productions-insert'),
                 html.A(
                     html.Button("Lookup", id='a-productions-lookup'), href='/productions/lookup/'
@@ -199,8 +199,18 @@ def create_productions_update_app(server):
         ),
         html.Div(
             [
-                html.Label("Select productions Position: ", id='u-productions-label'),
-                dcc.Dropdown(id='u-productions-position', options=[]),
+                html.Label("Select Production: "),
+                dcc.Dropdown(id='u-productions-select', options=[], placeholder='Select Production'),
+                html.Label("Venue: "),
+                dcc.Input(id='u-productions-venue', type='text'),
+                html.Label("Author: "),
+                dcc.Input(id='u-productions-author', type='text'),
+                html.Label("Open Date: "),
+                dcc.DatePickerSingle(id='u-productions-open'),
+                html.Label("Close Date: "),
+                dcc.DatePickerSingle(id='u-productions-close'),
+                html.Label("Festival: "),
+                dcc.Dropdown(id='u-productions-festival', options=[]),
                 html.Div(id='u-productions-message'),
                 html.Button("Update Production", id='u-productions-update'),
                 html.Button("Delete Production", id='u-productions-delete'),

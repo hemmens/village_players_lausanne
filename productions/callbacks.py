@@ -109,8 +109,8 @@ def register_productions_insert_callbacks(app, server):
         State('a-productions-festival', 'value'),
         prevent_initial_call=True
     )
-    def new_production(n_clicks, name, venue, open, close):
-        return insert_production(name, venue, open, close)
+    def new_production(n_clicks, name, venue, author, open, close, festival):
+        return insert_production(name, venue, author, open, close, festival)
 
 
 def register_productions_update_callbacks(app, server):
@@ -126,14 +126,28 @@ def register_productions_update_callbacks(app, server):
         Input('u-productions-role', 'data'),
     )
     def update_access_hidden(role):
-        return role not in {"productions", "Treasurer"}
+        return role not in {"Committee", "Treasurer"}
     
     @app.callback(
         Output('u-productions-no-access', 'hidden'),
         Input('u-productions-role', 'data'),
     )
     def update_no_access_hidden(role):
-        return role in {"productions", "Treasurer"}
+        return role in {"Committee", "Treasurer"}
+
+    @app.callback(
+        Output('u-productions-select', 'options'),
+        Input('u-productions-loaded', 'data'),
+    )
+    def update_productions(loaded):
+        return get_productions()
+
+    @app.callback(
+        Output('u-productions-festival', 'options'),
+        Input('u-productions-loaded', 'data'),
+    )
+    def update_festivals(loaded):
+        return get_festivals()
 
     # @app.callback(
     #     Output('u-productions-position', 'options'),
