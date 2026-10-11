@@ -98,7 +98,7 @@ def register_productions_insert_callbacks(app, server):
         Input('a-productions-loaded', 'data'),
     )
     def update_festivals(loaded):
-        return get_festivals()
+        return get_festivals(add_empty=True)
 
     @app.callback(
         Output('a-productions-message', 'children'),
@@ -149,7 +149,7 @@ def register_productions_update_callbacks(app, server):
         Input('u-productions-loaded', 'data'),
     )
     def update_festivals(loaded):
-        return get_festivals()
+        return get_festivals(add_empty=True)
 
     for datatype in ['value', 'date']:
         for field in update_mapping['productions'][datatype].keys():

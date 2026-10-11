@@ -60,7 +60,7 @@ def create_people_insert_app(server):
                 ),
                 html.Label("Gender: "),
                 dcc.Dropdown(id='a-people-gender', options=[
-                    {'label': gender.title(), 'value': gender} for gender in variables.GENDERS
+                    {'label': gender.title(), 'value': gender} for gender in [''] + variables.GENDERS
                 ]),
                 html.Label("GDPR Signed On: "),
                 dcc.DatePickerSingle(id='a-people-gdpr'),
@@ -135,7 +135,7 @@ def create_people_update_app(server):
                 ),
                 html.Label("Gender: "),
                 dcc.Dropdown(id='u-people-gender', options=[
-                    {'label': gender.title(), 'value': gender} for gender in variables.GENDERS
+                    {'label': gender.title(), 'value': gender} for gender in [''] + variables.GENDERS
                 ]),
                 html.Label("GDPR Signed On: "),
                 dcc.DatePickerSingle(id='u-people-gdpr'),
