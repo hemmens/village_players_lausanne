@@ -47,31 +47,37 @@ def convert_date(date_str):
 def find_collection_link(document_id, collection, field):
     return collection.find_one({field: document_id})
 
-def get_names():
+def get_names(add_empty=False):
     if not has_request_context():
         return []
 
-    return list(
+    names = list(
         {
             'label': f"{x['surname']}, {x['first_name']}",
             'value': str(x['_id']) + '|' + x['first_name'] + ' ' + x['surname'],
         }
         for x in db.people.find({})
     )
+    if add_empty:
+        names = [''] + names
+    return names
 
-def get_festivals():
+def get_festivals(add_empty=False):
     if not has_request_context():
         return []
 
-    return list(
+    festivals = list(
         {
             'label': f"{f['title']} ({f['open_date'].year})",
             'value': str(f['_id'])
         }
         for f in db.festivals.find({})
     )
+    if add_empty:
+        festivals = [''] + festivals
+    return festivals
 
-def get_productions():
+def get_productions(add_empty=False):
     if not has_request_context():
         return []
 
@@ -102,7 +108,10 @@ def get_productions():
         lambda row: {'label': f"{row.title} ({row.date.year})", 'value': row.db_id}, axis=1
     )
 
-    return shows['label'].to_list()
+    shows = shows['label'].to_list()
+    if add_empty:
+        shows = [''] + shows
+    return shows
 
 def get_names_for_person_update():
     if not has_request_context():

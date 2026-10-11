@@ -29,38 +29,52 @@ def register_transactions_insert_callbacks(app, server):
         Output('a-transactions-recipient', 'options'),
         Input('a-transactions-loaded', 'data'),
     )
-    def update_people(loaded):
-        return get_names()
+    def update_recipient(loaded):
+        return get_names(add_empty=True)
 
     @app.callback(
         Output('a-transactions-renew', 'options'),
         Input('a-transactions-loaded', 'data'),
     )
-    def update_people(loaded):
+    def update_renewing_member(loaded):
         return get_names()
 
     @app.callback(
         Output('a-transactions-existing', 'options'),
         Input('a-transactions-loaded', 'data'),
     )
-    def update_people(loaded):
-        return get_names()
+    def update_existing_member(loaded):
+        return get_names(add_empty=True)
 
     @app.callback(
         Output('a-transactions-production', 'options'),
         Input('a-transactions-loaded', 'data'),
     )
     def update_productions(loaded):
-        return get_productions()
+        return get_productions(add_empty=True)
 
-    # @app.callback(
-    #     Output('a-transactions-message', 'children'),
-    #     Input('a-transactions-insert', 'n_clicks'),
-    #     State('a-transactions-type', 'value'),
-    #     prevent_initial_call=True
-    # )
-    # def new_transactions(n_clicks, person_id, production_id, role, role_name):
-    #     return insert_transactions(person_id, production_id, role, role_name)
+    @app.callback(
+        Output('a-transactions-message', 'children'),
+        Input('a-transactions-insert', 'n_clicks'),
+        State('a-transactions-type', 'value'),
+        State('a-transactions-date', 'date'),
+        State('a-transactions-amount', 'value'),
+        State('a-transactions-description', 'value'),
+        State('a-transactions-recipient', 'value'),
+        State('a-transactions-recipient-text', 'value'),
+        State('a-transactions-member-type', 'value'),
+        State('a-transactions-renew', 'value'),
+        State('a-transactions-new-1', 'value'),
+        State('a-transactions-new-2', 'value'),
+        State('a-transactions-new-3', 'value'),
+        State('a-transactions-existing', 'value'),
+        State('a-transactions-production', 'value'),
+        prevent_initial_call=True
+    )
+    def new_transaction(n_clicks, t_type, date, amount, description, recipient, recipient_text,
+                            m_type, renew, new_1, new_2, new_3, existing, production_id):
+        return insert_transaction(t_type, date, amount, description, recipient, recipient_text,
+                            m_type, renew, new_1, new_2, new_3, existing, production_id)
 
 
 # def register_transactions_update_callbacks(app, server):
