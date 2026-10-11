@@ -161,7 +161,9 @@ def update_form_fill_in_value(collection, field, document_id):
     if not document:
         return ""
 
-    db_field = update_mapping[collection]['value'].get(field, field)
+    db_field = update_mapping[collection]['value'].get(field, '')
+    if not db_field:
+        db_field = update_mapping[collection]['date'].get(field, '')
     if db_field not in document:
         return ""
 
@@ -340,6 +342,83 @@ def insert_production(name, venue, author, open, close, festival_id):
     new_production = db.productions.insert_one(production_payload)
 
     return f"New production: {str(new_production.inserted_id)}" # {"ok": True}, 201
+
+def update_production(production_id, venue, author, open_date, close_date, festival_id):
+    if not has_request_context():
+        return "" # {"error": "No request context."}, 400
+
+    if not production_id:
+        return "Person ID is required." # {"error": "Committee member ID is required."}, 400
+
+    try:
+        production_id = ObjectId(production_id)
+    except Exception as e:
+        return f"Invalid production ID: {e}" # {"error": f"Invalid committee member ID: {e}"}, 400
+
+    if festival_id:
+        try:
+            festival_id = ObjectId(festival_id)
+        except Exception as e:
+            return f"Invalid festival ID: {e}" # {"error": f"Invalid committee member ID: {e}"}, 400
+
+    update_payload = {
+        '$set': {},
+        '$unset': {}
+    }
+
+    if venue:
+        update_payload['$set']['venue'] = venue
+    else:
+        update_payload['$unset']['venue'] = ""
+
+    if author:
+        update_payload['$set']['author'] = author
+    else:
+        update_payload['$unset']['author'] = ""
+
+    if open_date:
+        update_payload['$set']['open_date'] = convert_date(open_date)
+    else:
+        update_payload['$unset']['open_date'] = ""
+
+    if close_date:
+        update_payload['$set']['close_date'] = convert_date(close_date)
+    else:
+        update_payload['$unset']['close_date'] = ""
+
+    if festival_id:
+        update_payload['$set']['festival'] = festival_id
+    else:
+        update_payload['$unset']['festival'] = ""
+
+    result = db.productions.update_one({'_id': production_id}, update_payload)
+    if result.modified_count == 0:
+        return "Production not found or no data changes" # {"error": "Committee member not found"}, 404
+
+    return "Production updated successfully" # {"ok": True}, 200
+
+def delete_production(production_id):
+    # if not has_request_context():
+    #     return {"error": "No request context."}, 400
+
+    if not production_id:
+        return "Production ID is required." # {"error": "Committee member ID is required."}, 400
+
+    try:
+        production_id = ObjectId(production_id)
+    except Exception as e:
+        return f"Invalid person ID: {e}" # {"error": f"Invalid committee member ID: {e}"}, 400
+
+    if find_collection_link(production_id, db.transactions, 'Production'):
+        return "Production cannot be deleted - link to Transactions"
+    if find_collection_link(production_id, db.castcrew, 'production'):
+        return "Production cannot be deleted - link to Cast & Crew"
+
+    result = db.productions.delete_one({'_id': production_id})
+    if result.deleted_count == 0:
+        return "Production not found" # {"error": "Committee member not found"}, 404
+
+    return "Production deleted successfully" # {"ok": True}, 200
 
 # ---- COMMITTEE ----
 
@@ -536,7 +615,7 @@ def update_person(person_id, address, postcode, address_private, home_phone,
 
     result = db.people.update_one({'_id': person_id}, update_payload)
     if result.modified_count == 0:
-        return "Person not found" # {"error": "Committee member not found"}, 404
+        return "Person not found or no data changes" # {"error": "Committee member not found"}, 404
 
     return "Person updated successfully" # {"ok": True}, 200
 
@@ -616,7 +695,7 @@ def update_castcrew(castcrew_id, name):
 
     result = db.castcrew.update_one({'_id': castcrew_id}, update_payload)
     if result.modified_count == 0:
-        return "Role not found" # {"error": "Committee member not found"}, 404
+        return "Role not found or no data changes" # {"error": "Committee member not found"}, 404
 
     return "Role updated successfully" # {"ok": True}, 200
 
