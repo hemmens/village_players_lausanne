@@ -2,7 +2,6 @@ update_mapping = {
     'productions': {
         'value': {'venue': 'venue', 'author': 'author', 'festival': 'festival'},
         'date': {'open': 'open_date', 'close': 'close_date'},
-        'entry_lambda': lambda x: x['title']
     },
     'castcrew': {
         'value': {'role-name': 'role_name'},
@@ -11,7 +10,6 @@ update_mapping = {
     'festivals': {
         'value': {'venue': 'venue'},
         'date': {'open': 'open_date', 'close': 'close_date'},
-        'entry_lambda': lambda x: x['title']
     },
     'people': {
         'value': {
