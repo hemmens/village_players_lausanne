@@ -1,8 +1,10 @@
 from current_role import current_role
-from dash import Input, Output, State
+from dash import Input, Output, State, ctx
 from database import (
-    get_festivals, get_productions, get_production_details, insert_festival, insert_production
+    get_festivals, get_productions, get_production_details, insert_festival,
+    insert_production, update_form_fill_in_value, update_production, delete_production
 )
+from update_mapping import update_mapping
 
 def register_productions_lookup_callbacks(app, server):
     @app.callback(
@@ -149,18 +151,35 @@ def register_productions_update_callbacks(app, server):
     def update_festivals(loaded):
         return get_festivals()
 
-    # @app.callback(
-    #     Output('u-productions-position', 'options'),
-    #     Input('u-productions-loaded', 'data'),
-    # )
-    # def update_names(loaded):
-    #     return get_productions_positions()
+    for datatype in ['value', 'date']:
+        for field in update_mapping['productions'][datatype].keys():
+            @app.callback(
+                Output(f'u-productions-{field}', datatype),
+                Input('u-productions-select', 'value'),
+            )
+            def update_field_value(selected_id, field=field):
+                output =  update_form_fill_in_value('productions', field, selected_id)
+                if not output:
+                    output =  update_form_fill_in_value('festivals', field, selected_id)
+                return output
 
-    # @app.callback(
-    #     Output('u-productions-message', 'children'),
-    #     Input('u-productions-delete', 'n_clicks'),
-    #     State('u-productions-position', 'value'),
-    #     prevent_initial_call=True
-    # )
-    # def remove_productions_member(n_clicks, position):
-    #     return delete_productions_member(position)
+    @app.callback(
+        Output('u-productions-message', 'children'),
+        Input('u-productions-update', 'n_clicks'),
+        Input('u-productions-delete', 'n_clicks'),
+        State('u-productions-select', 'value'),
+        State('u-productions-venue', 'value'),
+        State('u-productions-author', 'value'),
+        State('u-productions-open', 'date'),
+        State('u-productions-close', 'date'),
+        State('u-productions-festival', 'value'),
+        prevent_initial_call=True
+    )
+    def change_production_details(u_clicks, d_clicks, production_id, venue, author,
+                              open_date, close_date, festival_id):
+        if ctx.triggered_id == "u-productions-update":
+            return update_production(production_id, venue, author,
+                              open_date, close_date, festival_id)
+
+        if ctx.triggered_id == "u-productions-delete":
+            return delete_production(production_id)
