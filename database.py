@@ -33,7 +33,7 @@ load_dotenv()
 #     )
 
 uri = os.getenv("URI_TEMPLATE", "")
-uri = uri.replace("{{user}}", os.getenv("USERNAME_COMM", "")).replace("{{pw}}", os.getenv("PASSWORD_COMM", ""))
+uri = uri.replace("{{user}}", os.getenv("USERNAME_ADMIN", "")).replace("{{pw}}", os.getenv("PASSWORD_ADMIN", ""))
 
 client = MongoClient(uri, server_api=ServerApi('1'), serverSelectionTimeoutMS=5000)
 db = client.myDatabase
@@ -43,6 +43,37 @@ def convert_date(date_str):
     return datetime(
         int(date[0]), int(date[1]), int(date[2])
     )
+
+def handle_decimal(amount: float) -> str:
+    if (100 * amount) % 100 == 0:
+        return Decimal128('%i' % amount)
+    else:
+        return Decimal128('%.2f' % amount)
+
+def get_new_ref(date):
+    season = date.year % 100 + int(date.month >= 6)
+    latest_refs = [
+        x['Reference'] for x in db.transactions.find({'Reference': {'$gt': season*1000}})
+    ]
+
+    if len(latest_refs):
+        return max(latest_refs) + 1
+    else:
+        return season*1000 + 1
+
+def extract_name(name):
+    if name is None:
+        return None
+
+    name_split = name.split(',')
+    first_name = name_split[1].strip()
+    surname = name_split[0].strip()
+    full_name = first_name + ' ' + surname
+    return {
+        'first_name': first_name,
+        'surname': surname,
+        'full_name': full_name,
+    }
 
 def find_collection_link(document_id, collection, field):
     return collection.find_one({field: document_id})
@@ -725,3 +756,89 @@ def delete_castcrew(castcrew_id):
         return "Role not found" # {"error": "Committee member not found"}, 404
 
     return "Role deleted successfully" # {"ok": True}, 200
+
+# ---- TRANSACTIONS ----
+
+def insert_misc_transaction(t_type, date, amount, description, recipient, recipient_text, production_id):
+    payload = {
+        'Reference': get_new_ref(convert_date(date)),
+        'Date': convert_date(date),
+        'Amount': handle_decimal(amount),
+        'Type': t_type,
+    }
+    if recipient_text:
+        payload['Recipient'] = recipient_text
+    elif recipient:
+        payload['Recipient'] = ObjectId(recipient)
+    if description:
+        payload['Description'] = description
+    if production_id:
+        payload['Production'] = ObjectId(production_id)
+
+    new_transaction = db.transactions.insert_one(payload)
+
+    return f"New transaction: {str(new_transaction.inserted_id)}"
+
+def insert_new_member(date, amount, m_type, season, new_1):
+    name = extract_name(new_1)
+    if not m_type or not season or not name:
+        return f"Type, Season and Name required: {m_type}, {season}, {name}"
+
+    transaction_payload = {
+        'Reference': get_new_ref(convert_date(date)),
+        'Date': convert_date(date),
+        'Amount': handle_decimal(amount),
+        'Type': 'Membership Subscription',
+        'Description': name['full_name'],
+    }
+
+    message = f"New transaction: {transaction_payload['Reference']}"
+
+    person_payload = {
+        'first_name': name['first_name'],
+        'surname': name['surname'],
+    }
+    person = db.people.find_one(person_payload)
+    if person:
+        person_id = person['_id']
+    else:
+        person_payload['email_private'] = True
+        new_person = db.people.insert_one(person_payload)
+        person_id = new_person.inserted_id
+        message += f"; New person: {person_id}"
+
+    member_payload = {
+        'season': season,
+        'person': person_id,
+    }
+    member = db.members.find_one(member_payload)
+    if member:
+        transaction_payload['existing_member'] = member['_id']
+        new_transaction = db.transactions.insert_one(transaction_payload)
+    else:
+        new_transaction = db.transactions.insert_one(transaction_payload)
+        member_payload['type'] = m_type
+        member_payload['payment'] = new_transaction.inserted_id
+        member_payload['carry_over'] = False
+
+        new_member = db.members.insert_one(member_payload)
+        message += f"; New member: {new_member.inserted_id}"
+
+    return message
+
+def insert_transaction(t_type, date, amount, description, recipient, recipient_text,
+                        m_type, season, renew, new_1, production_id): # new_2, new_3, existing, 
+    # if not has_request_context():
+    #     return {"error": "No request context."}, 400
+
+    if not t_type or not date or not amount:
+        return "Type, Date, and Amount are required." # {"error": "Person, season, and position are required."}, 400
+
+    if t_type == 'Membership Subscription':
+        return insert_new_member(date, amount, m_type, season, new_1)
+    elif t_type in {'Production', "Entr'Acts", 'Materials', 'Subscriptions', 'Other'}:
+        return insert_misc_transaction(
+            t_type, date, amount, description, recipient, recipient_text, production_id
+        )
+
+    return "" # f"New Cast or Crew Member: {str(new_castcrew.inserted_id)}" # {"ok": True}, 201
