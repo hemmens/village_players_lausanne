@@ -1,6 +1,7 @@
 from current_role import current_role
-from dash import Input, Output, State, ctx
-from database import get_names, get_productions
+from dash import Input, Output, State, ctx, no_update
+from database import get_names, get_productions, insert_transaction
+from update_mapping import grey_out, transaction_disable
 
 
 def register_transactions_insert_callbacks(app, server):
@@ -53,6 +54,40 @@ def register_transactions_insert_callbacks(app, server):
     def update_productions(loaded):
         return get_productions(add_empty=True)
 
+    for field in [
+        'recipient', 'recipient-text', 'member-type', 'season', 'renew',
+        'new-1', 'production' # 'new-2', 'new-3', 'existing', 
+    ]:
+        @app.callback(
+            Output(f'a-transactions-{field}', 'disabled'),
+            Input('a-transactions-loaded', 'data'),
+            Input('a-transactions-type', 'value'),
+        )
+        def disable_field(loaded, t_type):
+            params = transaction_disable[field]
+            result = t_type == params[1] is params[0]
+            return not t_type or result
+
+        @app.callback(
+            Output(f'a-transactions-{field}', 'style'),
+            Input('a-transactions-loaded', 'data'),
+            Input('a-transactions-type', 'value'),
+        )
+        def greyout_field(loaded, t_type):
+            params = transaction_disable[field]
+            result = t_type == params[1] is params[0]
+            return grey_out if not t_type or result else {}
+
+        @app.callback(
+            Output(f'a-transactions-{field}', 'value'),
+            Input('a-transactions-loaded', 'data'),
+            Input('a-transactions-type', 'value'),
+        )
+        def empty_field(loaded, t_type):
+            params = transaction_disable[field]
+            result = t_type == params[1] is params[0]
+            return None if not t_type or result else no_update
+
     @app.callback(
         Output('a-transactions-message', 'children'),
         Input('a-transactions-insert', 'n_clicks'),
@@ -63,18 +98,19 @@ def register_transactions_insert_callbacks(app, server):
         State('a-transactions-recipient', 'value'),
         State('a-transactions-recipient-text', 'value'),
         State('a-transactions-member-type', 'value'),
+        State('a-transactions-season', 'value'),
         State('a-transactions-renew', 'value'),
         State('a-transactions-new-1', 'value'),
-        State('a-transactions-new-2', 'value'),
-        State('a-transactions-new-3', 'value'),
-        State('a-transactions-existing', 'value'),
+        # State('a-transactions-new-2', 'value'),
+        # State('a-transactions-new-3', 'value'),
+        # State('a-transactions-existing', 'value'),
         State('a-transactions-production', 'value'),
         prevent_initial_call=True
     )
     def new_transaction(n_clicks, t_type, date, amount, description, recipient, recipient_text,
-                            m_type, renew, new_1, new_2, new_3, existing, production_id):
+                            m_type, season, renew, new_1, production_id): # , new_2, new_3, existing
         return insert_transaction(t_type, date, amount, description, recipient, recipient_text,
-                            m_type, renew, new_1, new_2, new_3, existing, production_id)
+                            m_type, season, renew, new_1, production_id)
 
 
 # def register_transactions_update_callbacks(app, server):

@@ -39,21 +39,18 @@ def create_people_insert_app(server):
                 ),
                 html.Label("Home Phone: "),
                 dcc.Input(id='a-people-home-phone', type='text'),
-                html.Label("Home Phone is Private: "),
                 dcc.Checklist(
                     id='a-people-home-phone-private',
                     options=[{'label': 'Home Phone is Private', 'value': 'private'}]
                 ),
                 html.Label("Mobile: "),
                 dcc.Input(id='a-people-mobile', type='text'),
-                html.Label("Mobile is Private: "),
                 dcc.Checklist(
                     id='a-people-mobile-private',
                     options=[{'label': 'Mobile is Private', 'value': 'private'}]
                 ),
                 html.Label("Email: "),
                 dcc.Input(id='a-people-email', type='text'),
-                html.Label("Email is Private: "),
                 dcc.Checklist(
                     id='a-people-email-private',
                     options=[{'label': 'Email is Private', 'value': 'private'}]
