@@ -3,19 +3,17 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
-  <title>MongoDB Role App</title>
+  <title>Village Players Database Interface</title>
   <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
 </head>
 <body>
   <header>
-    <strong>My Website</strong>
+    <strong>Village Players Database Interface</strong>
     <span class="role">Access: {{ role }}</span>
-    {% if role != "Public" %}
+    {% if role in ("Committee", "Treasurer") %}
     <form method="post" action="{{ url_for('logout') }}">
       <button class="secondary" type="submit">Sign out</button>
     </form>
-    {% else %}
-    <a class="button secondary" href="{{ url_for('login') }}">Sign in</a>
     {% endif %}
   </header>
 
@@ -31,6 +29,9 @@
       <h1>Debug Role</h1>
       <form method="post" action="{{ url_for('set_debug_role') }}">
         <select name="role" onchange="this.form.submit()">
+            <option value="Awaiting Connection" {% if role == "Awaiting Connection" %}selected{% endif %}>
+                Awaiting Connection
+            </option>
             <option value="Public" {% if role == "Public" %}selected{% endif %}>
                 Public
             </option>
@@ -42,23 +43,33 @@
             </option>
         </select>
     </form>
+    <form method="post" action="{{ url_for('debug_login') }}">
+    <button class="secondary" type="submit">Connect</button>
+    </form>
     </section>
     {% endif %}
 
     <section class="card">
-      <a class="button secondary" href="/members/lookup/">Members</a>
-      <a class="button secondary" href="/productions/lookup/">Productions</a>
-      <a class="button secondary" href="/committee/lookup/">Committee</a>
-      {% if role != "Public" %}
-      <a class="button secondary" href="/castcrew/insert/">Cast & Crew</a>
-      <a class="button secondary" href="/people/insert/">People</a>
-      <a class="button secondary" href="/balances/insert/">Balances</a>
-      <a class="button secondary" href="/transactions/insert/">Transactions</a>
-      {% endif %}
+        {% if role == "Awaiting Connection" %}
+        <form method="post" action="{{ url_for('public_login') }}">
+        <button class="secondary" type="submit">Connect as Public</button>
+        </form>
+        <a class="button secondary" href="{{ url_for('login') }}">Sign in</a>
+        {% else %}
+        <a class="button secondary" href="/members/lookup/">Members</a>
+        <a class="button secondary" href="/productions/lookup/">Productions</a>
+        <a class="button secondary" href="/committee/lookup/">Committee</a>
+        {% if role != "Public" %}
+        <a class="button secondary" href="/castcrew/insert/">Cast & Crew</a>
+        <a class="button secondary" href="/people/insert/">People</a>
+        <a class="button secondary" href="/balances/insert/">Balances</a>
+        <a class="button secondary" href="/transactions/insert/">Transactions</a>
+        {% endif %}
+        {% endif %}
     </section>
   </main>
 
-<script>
+<!-- <script>
 document.querySelector("#load").addEventListener("click", async () => {
   const r = await fetch("/api/data");
   document.querySelector("#output").textContent =
@@ -78,6 +89,6 @@ if (save) {
       r.ok ? "Saved." : (await r.json()).error;
   });
 }
-</script>
+</script> -->
 </body>
 </html>

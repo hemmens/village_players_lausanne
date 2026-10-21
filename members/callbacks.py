@@ -2,7 +2,8 @@ import pandas as pd
 from current_role import current_role
 from datetime import datetime
 from dash import Input, Output, State, dcc
-from database import get_member_list, get_names
+from database import get_names
+from members.database import get_member_list
 from variables import MEMBER_LIST_COLUMNS
 
 def register_member_lookup_callbacks(app, server):
