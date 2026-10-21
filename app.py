@@ -1,9 +1,12 @@
 import os
 import secrets
 from datetime import datetime, timedelta, timezone
+from dotenv import load_dotenv
+from pathlib import Path
 from urllib.parse import quote
 
-from flask import Flask, flash, redirect, render_template, request, session, url_for
+from dash import Dash
+from flask import Flask, flash, has_request_context, redirect, render_template, request, session, url_for
 from pymongo import MongoClient, ReturnDocument
 from pymongo.errors import PyMongoError, OperationFailure
 from pymongo.server_api import ServerApi
@@ -12,155 +15,41 @@ from castcrew.layout import create_castcrew_insert_app, create_castcrew_update_a
 from committee.layout import (
     create_committee_insert_app, create_committee_lookup_app, create_committee_update_app
 )
-from members.layout import create_members_lookup_app
-from people.layout import create_people_insert_app, create_people_update_app
+from database import make_client, save_client, close_client
+from members.callbacks import register_member_lookup_callbacks
+from members.layout import members_lookup_layout
+from people.callbacks import register_people_insert_callbacks, register_people_update_callbacks
+from people.layout import people_insert_layout, people_update_layout
 from productions.layout import (
     create_productions_lookup_app, create_festivals_insert_app,
     create_productions_insert_app, create_productions_update_app
 )
-from transactions.layout import create_transactions_insert_app
+from transactions.callbacks import register_transactions_insert_callbacks
+from transactions.layout import transactions_insert_layout
+
+APP_DIR = Path(__file__).resolve().parent
+ENV_FILE = APP_DIR / ".env"
+
+load_dotenv(dotenv_path=ENV_FILE, override=True)
 
 app = Flask(__name__)
-app.secret_key = os.environ.get("FLASK_SECRET_KEY", secrets.token_hex(32))
+app.secret_key = os.getenv("FLASK_SECRET_KEY", "")
 
-# MongoDB settings. Keep these on the server; never expose them to browser JS.
-MONGODB_URI_TEMPLATE = os.environ.get(
-    "MONGODB_URI_TEMPLATE",
-    "mongodb+srv://{username}:{password}@vps-00.lk81a.mongodb.net/?retryWrites=true&w=majority&appName=VPS-00",
-)
-APP_DB_NAME = os.environ.get("APP_DB_NAME", "appdb")
-LEASE_SECONDS = int(os.environ.get("PRIVILEGED_LEASE_SECONDS", "120"))
-
-
-def utcnow():
-    return datetime.now(timezone.utc)
-
-
-def mongo_uri_for_credentials(username, password):
-    # URI-encode credentials so special characters cannot break the URI.
-    return MONGODB_URI_TEMPLATE.format(
-        username=quote(username, safe=""),
-        password=quote(password, safe=""),
+dashboards = {}
+for route in [
+    'members/lookup',
+    # 'productions/lookup', 'productions/insert', 'productions/update',
+    # 'committee/lookup', 'committee/insert', 'committee/update',
+    # 'castcrew/insert', 'castcrew/update',
+    'people/insert', 'people/update',
+    'transactions/insert',
+]:
+    dashboards[route] = Dash(
+        __name__ + '_' + route.replace('/', '_'),
+        server=app,
+        url_base_pathname=f"/{route}/",
+        suppress_callback_exceptions=True,
     )
-
-
-def authenticate(username, password):
-    """Authenticate against MongoDB and return (role, client), or (None, None)."""
-    if not username or not password:
-        return None, None
-
-    client = None
-    try:
-        uri = mongo_uri_for_credentials(username, password)
-        client = MongoClient(uri, server_api=ServerApi('1')) #, serverSelectionTimeoutMS=5000)
-        # Force authentication/connection now rather than relying on lazy connect.
-        client.admin.command("ping")
-
-        db = client[APP_DB_NAME]
-        user = db.users.find_one({"username": username}, {"role": 1})
-
-        # The MongoDB credentials are valid. Application role comes from users.role.
-        role = (user or {}).get("role", "Member")
-        if role not in {"Member", "Admin"}:
-            role = "Member"
-        return role, client
-    except (PyMongoError, OperationFailure):
-        if client:
-            client.close()
-        return None, None
-
-
-def release_lease():
-    token = session.get("lease_token")
-    if token:
-        # A separate application connection is used for the lease.
-        client = MongoClient(os.environ["APP_MONGODB_URI"], serverSelectionTimeoutMS=5000)
-        try:
-            client[APP_DB_NAME].privileged_leases.delete_one(
-                {"_id": "privileged", "token": token}
-            )
-        finally:
-            client.close()
-    session.pop("lease_token", None)
-
-
-def acquire_lease(token, role):
-    client = MongoClient(os.environ["APP_MONGODB_URI"], serverSelectionTimeoutMS=5000)
-    try:
-        db = client[APP_DB_NAME]
-        now = utcnow()
-        expires = now + timedelta(seconds=LEASE_SECONDS)
-
-        # Atomic: succeeds only if no active privileged session exists.
-        doc = db.privileged_leases.find_one_and_update(
-            {
-                "_id": "privileged",
-                "$or": [
-                    {"expires_at": {"$lte": now}},
-                    {"token": token},
-                ],
-            },
-            {
-                "$set": {
-                    "token": token,
-                    "role": role,
-                    "expires_at": expires,
-                    "updated_at": now,
-                }
-            },
-            upsert=True,
-            return_document=ReturnDocument.AFTER,
-        )
-        return bool(doc and doc.get("token") == token)
-    finally:
-        client.close()
-
-
-def renew_lease():
-    token = session.get("lease_token")
-    if not token or session.get("role") not in {"Member", "Admin"}:
-        return False
-
-    client = MongoClient(os.environ["APP_MONGODB_URI"], serverSelectionTimeoutMS=5000)
-    try:
-        result = client[APP_DB_NAME].privileged_leases.update_one(
-            {"_id": "privileged", "token": token},
-            {
-                "$set": {
-                    "expires_at": utcnow() + timedelta(seconds=LEASE_SECONDS),
-                    "updated_at": utcnow(),
-                }
-            },
-        )
-        return result.modified_count == 1 or result.matched_count == 1
-    finally:
-        client.close()
-
-
-def current_role():
-    if app.debug:
-        return session.get("debug_role", "Public")
-
-    role = session.get("role", "Public")
-    if role in {"Committee", "Treasurer"}:
-        if renew_lease():
-            return role
-        # Lease was lost/expired: safely fall back to Public.
-        session["role"] = "Public"
-        session.pop("lease_token", None)
-    return "Public"
-
-
-@app.before_request
-def maintain_privileged_session():
-    if request.endpoint not in {"login", "logout", "static"}:
-        current_role()
-
-
-@app.route("/", methods=["GET"])
-def index():
-    role = current_role()
-    return render_template("index.html", role=role)
 
 
 @app.route("/set-debug-role", methods=["POST"])
@@ -171,7 +60,7 @@ def set_debug_role():
     role = request.form.get("role", "Public")
 
     if role not in {"Public", "Committee", "Treasurer"}:
-        role = "Public"
+        role = "Awaiting Connection"
 
     session["debug_role"] = role
 
@@ -186,107 +75,146 @@ def login():
     username = request.form.get("username", "").strip()
     password = request.form.get("password", "")
 
-    # Existing privileged session is released before a new login attempt.
-    release_lease()
+    if not username or not password:
+        username = os.getenv("USERNAME", "")
+        password = os.getenv("PASSWORD", "")
+
+    try:
+        client = make_committee_client(username, password)
+    except PyMongoError:
+        return render_template(
+            "login.html", error="Database connection unavailable."
+        ), 503
+
+    # Replace any previous login/session state.
+    old_id = session.pop("db_session_id", None)
+    if old_id:
+        close_client(old_id)
+
+    # Rotate the Flask session identifier to reduce session-fixation risk.
     session.clear()
+    db_session_id = secrets.token_urlsafe(32)
 
-    role, client = authenticate(username, password)
+    save_client(db_session_id, client)
+    session["db_session_id"] = db_session_id
 
-    if role is None:
-        # Per the requested behavior, missing/invalid credentials become Public.
+    db = client.myDatabase
+    session["database"] = client.myDatabase
+    user = db.users.find_one({'username': username})
+    if user is None or user.get('role', 'Public') == 'Public':
+        session["username"] = None
         session["role"] = "Public"
-        flash("Credentials were missing or invalid. You are using Public access.", "info")
-        return redirect(url_for("index"))
 
-    token = secrets.token_urlsafe(32)
-    if not acquire_lease(token, role):
-        # Valid credentials, but the single privileged slot is already occupied.
-        if client:
-            client.close()
-        session["role"] = "Public"
-        flash(
-            "Your credentials are valid, but the privileged slot is currently in use. "
-            "You are using Public access.",
-            "info",
-        )
-        return redirect(url_for("index"))
+    elif user.get('role', 'Public') in {'Committee', 'Treasurer'}:
+        session["username"] = username
+        session["role"] = user['role']
 
-    # Store no password in the Flask session.
-    session["role"] = role
-    session["username"] = username
-    session["lease_token"] = token
-    if client:
-        client.close()
+    else:
+        raise
 
-    flash(f"Signed in as {role}.", "success")
     return redirect(url_for("index"))
+
+
+@app.route("/public-login", methods=["POST"])
+def public_login():
+    username = os.getenv("USERNAME", "")
+    password = os.getenv("PASSWORD", "")
+
+    try:
+        client = make_client(username, password)
+    except PyMongoError:
+        return redirect(
+            url_for("index"), error="Database connection unavailable."
+        ), 503
+
+    # Replace any previous login/session state.
+    old_id = session.pop("db_session_id", None)
+    if old_id:
+        close_client(old_id)
+
+    # Rotate the Flask session identifier to reduce session-fixation risk.
+    session.clear()
+    db_session_id = secrets.token_urlsafe(32)
+
+    save_client(db_session_id, client)
+    session["role"] = "Public"
+    session["db_session_id"] = db_session_id
+
+    return redirect(url_for("index"))
+
+
+@app.route("/debug-login", methods=["POST"])
+def debug_login():
+    username = os.getenv("USERNAME_ADMIN", "")
+    password = os.getenv("PASSWORD_ADMIN", "")
+
+    try:
+        client = make_client(username, password)
+    except PyMongoError:
+        return redirect(
+            url_for("index"), error="Database connection unavailable."
+        ), 503
+
+    # Replace any previous login/session state.
+    old_id = session.pop("db_session_id", None)
+    if old_id:
+        close_client(old_id)
+
+    # Rotate the Flask session identifier to reduce session-fixation risk.
+    session.clear()
+    db_session_id = secrets.token_urlsafe(32)
+
+    save_client(db_session_id, client)
+    session["debug_role"] = "Public"
+    session["db_session_id"] = db_session_id
+
+    return redirect(url_for("index"))
+
+
+@app.route("/")
+def index():
+    if 'role' not in session.keys():
+        session["role"] = "Awaiting Connection"
+    if 'debug_role' not in session.keys():
+        session["debug_role"] = "Awaiting Connection"
+
+    role = session["debug_role"] if app.debug else session["role"]
+
+    return render_template("index.html", role=role)
 
 
 @app.route("/logout", methods=["POST"])
 def logout():
-    release_lease()
+    db_session_id = session.pop("db_session_id", None)
+
+    if db_session_id:
+        close_client(db_session_id)
+
     session.clear()
-    return redirect(url_for("index"))
+    return redirect(url_for("login"))
 
 
-@app.route("/api/data", methods=["GET"])
-def read_data():
-    role = current_role()
-
-    client = MongoClient(os.environ["APP_MONGODB_URI"], serverSelectionTimeoutMS=5000)
-    try:
-        docs = list(
-            client[APP_DB_NAME].items.find({}, {"_id": 0}).limit(100)
-        )
-        return {"role": role, "items": docs}
-    finally:
-        client.close()
-
-
-@app.route("/api/data", methods=["POST"])
-def write_data():
-    role = current_role()
-    if role not in {"Member", "Admin"}:
-        return {"error": "Write access requires Member or Admin privileges."}, 403
-
-    payload = request.get_json(silent=True) or {}
-    value = str(payload.get("value", "")).strip()
-    if not value:
-        return {"error": "value is required."}, 400
-
-    client = MongoClient(os.environ["APP_MONGODB_URI"], serverSelectionTimeoutMS=5000)
-    try:
-        client[APP_DB_NAME].items.insert_one(
-            {
-                "value": value,
-                "created_by": session.get("username"),
-                "created_at": utcnow(),
-            }
-        )
-        return {"ok": True}
-    finally:
-        client.close()
-
-
-@app.after_request
-def no_store_for_auth_pages(response):
-    if request.endpoint in {"login", "logout"}:
-        response.headers["Cache-Control"] = "no-store"
-    return response
-
-members_lookup_app = create_members_lookup_app(app)
-productions_lookup_app = create_productions_lookup_app(app)
-festivals_insert_app = create_festivals_insert_app(app)
-productions_insert_app = create_productions_insert_app(app)
-productions_update_app = create_productions_update_app(app)
-committee_lookup_app = create_committee_lookup_app(app)
-committee_insert_app = create_committee_insert_app(app)
-committee_update_app = create_committee_update_app(app)
-people_insert_app = create_people_insert_app(app)
-people_update_app = create_people_update_app(app)
-castcrew_insert_app = create_castcrew_insert_app(app)
-castcrew_update_app = create_castcrew_update_app(app)
-transactions_insert_app = create_transactions_insert_app(app)
+dashboards['members/lookup'].layout = members_lookup_layout
+register_member_lookup_callbacks(dashboards['members/lookup'], app)
+dashboards['people/insert'].layout = people_insert_layout
+register_people_insert_callbacks(dashboards['people/insert'], app)
+dashboards['people/update'].layout = people_update_layout
+register_people_update_callbacks(dashboards['people/update'], app)
+dashboards['transactions/insert'].layout = transactions_insert_layout
+register_transactions_insert_callbacks(dashboards['transactions/insert'], app)
+# members_lookup_app = create_members_lookup_app(app)
+# productions_lookup_app = create_productions_lookup_app(app)
+# festivals_insert_app = create_festivals_insert_app(app)
+# productions_insert_app = create_productions_insert_app(app)
+# productions_update_app = create_productions_update_app(app)
+# committee_lookup_app = create_committee_lookup_app(app)
+# committee_insert_app = create_committee_insert_app(app)
+# committee_update_app = create_committee_update_app(app)
+# people_insert_app = create_people_insert_app(app)
+# people_update_app = create_people_update_app(app)
+# castcrew_insert_app = create_castcrew_insert_app(app)
+# castcrew_update_app = create_castcrew_update_app(app)
+# transactions_insert_app = create_transactions_insert_app(app)
 
 if __name__ == "__main__":
     # app.run(host="127.0.0.1", port=int(os.environ.get("PORT", "5000")), debug=False)

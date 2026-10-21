@@ -1,60 +1,43 @@
-from current_role import current_role
-from members.callbacks import register_member_lookup_callbacks
-import variables
-
-from dash import Dash, html, dcc
+from dash import html, dcc
 import dash_ag_grid as dag
 
-seasons = variables.SEASONS
-mtypes = variables.MEMBER_TYPES
-mcols = list(variables.MEMBER_LIST_COLUMNS.keys())
+from variables import MEMBER_LIST_COLUMNS, MEMBER_TYPES, SEASONS
 
-def create_members_lookup_app(server):
-    app = Dash(
-        __name__,
-        server=server,
-        url_base_pathname='/members/lookup/',
-    )
+mcols = list(MEMBER_LIST_COLUMNS.keys())
 
-    role = current_role(server)
-
-    app.layout = [
-        dcc.Store(id='f-member-loaded', data=True),
-        dcc.Store(id='f-member-role', storage_type='session', data=role),
-        html.H1('Village Players Database Interface'),
-        html.H2('Members'),
-        dcc.Download(id='f-member-download'),
-        html.Label("Select Seasons: "),
-        dcc.Dropdown(id='f-member-seasons', multi=True, options=seasons, value=[seasons[0]]),
-        html.Div(
-            [
-                html.Label("Select Membership Types: "),
-                dcc.Dropdown(id='f-member-types', multi=True, options=mtypes, value=mtypes),
-                html.Label("Select Columns: "),
-                dcc.Dropdown(
-                    id='f-member-columns', multi=True, options=mcols,
-                    value=['Season', 'First Name', 'Surname']
-                ),
-            ],
-            id='f-member-access',
-            hidden=(role not in {"Committee", "Treasurer"})
-        ),
-        html.Label("Select People: "),
-        dcc.Dropdown(id='f-member-persons', multi=True, options=[], value=[]),
-        dag.AgGrid(
-            id='f-member-list',
-            columnDefs=[
-                {'field': 'season', 'headerName': 'Season'}, 
-                {'field': 'first_name', 'headerName': 'First Name'}, 
-                {'field': 'surname', 'headerName': 'Surname'},
-            ]
-        ),
-        html.Button("Export to Excel", id='f-member-button'),
-        html.A(
-            html.Button("Home", id='f-member-home'), href='/'
-        ),
-    ]
-    
-    register_member_lookup_callbacks(app, server)
-
-    return app
+members_lookup_layout = [
+    dcc.Store(id='f-member-loaded', data=True),
+    dcc.Store(id='f-member-role', storage_type='session'),
+    html.H1('Village Players Database Interface'),
+    html.H2('Members'),
+    dcc.Download(id='f-member-download'),
+    html.Label("Select Seasons: "),
+    dcc.Dropdown(id='f-member-seasons', multi=True, options=SEASONS, value=[SEASONS[0]]),
+    html.Div(
+        [
+            html.Label("Select Membership Types: "),
+            dcc.Dropdown(id='f-member-types', multi=True, options=MEMBER_TYPES, value=MEMBER_TYPES),
+            html.Label("Select Columns: "),
+            dcc.Dropdown(
+                id='f-member-columns', multi=True, options=mcols,
+                value=['Season', 'First Name', 'Surname']
+            ),
+        ],
+        id='f-member-access',
+        hidden=True
+    ),
+    html.Label("Select People: "),
+    dcc.Dropdown(id='f-member-persons', multi=True, options=[], value=[]),
+    dag.AgGrid(
+        id='f-member-list',
+        columnDefs=[
+            {'field': 'season', 'headerName': 'Season'}, 
+            {'field': 'first_name', 'headerName': 'First Name'}, 
+            {'field': 'surname', 'headerName': 'Surname'},
+        ]
+    ),
+    html.Button("Export to Excel", id='f-member-button'),
+    html.A(
+        html.Button("Home", id='f-member-home'), href='/'
+    ),
+]

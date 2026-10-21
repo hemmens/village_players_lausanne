@@ -11,19 +11,24 @@
     <h1>Sign in</h1>
     <p>Enter credentials for Committee access. You can also continue without credentials.</p>
 
-    <form method="post" autocomplete="on">
-      <label>Username
-        <input name="username" autocomplete="username">
-      </label>
-      <label>Password
-        <input type="password" name="password" autocomplete="current-password">
-      </label>
+    <form method="post" action="{{ url_for('login') }}">
+        <label for="username">Username</label>
+        <input
+            type="text"
+            id="username"
+            name="username"
+        >
+      
+        <label for="password">Password</label>
+        <input
+            type="password"
+            id="password"
+            name="password"
+        >
       <button type="submit">Continue</button>
     </form>
 
-    <form method="post" action="{{ url_for('login') }}">
-      <button class="secondary" type="submit">Continue as Public</button>
-    </form>
+    <a class="button secondary" href="{{ url_for('index') }}">Cancel</a>
   </main>
 </body>
 </html>

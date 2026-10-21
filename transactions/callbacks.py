@@ -1,6 +1,7 @@
 from current_role import current_role
 from dash import Input, Output, State, ctx, no_update
-from database import get_names, get_productions, insert_transaction
+from database import get_names, get_productions
+from transactions.database import insert_transaction
 from update_mapping import grey_out, transaction_disable
 
 

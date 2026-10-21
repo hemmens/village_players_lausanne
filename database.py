@@ -1,42 +1,65 @@
 import os
 import pandas as pd
 from datetime import datetime
-# from urllib.parse import quote
+from urllib.parse import quote
 
 from bson.decimal128 import Decimal128
 from bson.objectid import ObjectId
 from dotenv import load_dotenv
-from flask import has_request_context
+from flask import has_request_context, session
 from pymongo.mongo_client import MongoClient
 from pymongo.server_api import ServerApi
+from pymongo.errors import PyMongoError
 
 from update_mapping import update_mapping
 from variables import MEMBER_LIST_COLUMNS
 
 load_dotenv()
 
-# def create_user_client(username, password):
-#     username = quote(username, safe="")
-#     password = quote(password, safe="")
+_clients = {}
 
-#     uri = os.environ.get("URI_TEMPLATE", "").format(
-#         username=username,
-#         password=password,
-#     )
 
-#     if not uri:
-#         raise ValueError("Missing URI environment variable")
+def make_client(username, password):
+    username = quote(username, safe="")
+    password = quote(password, safe="")
 
-#     return MongoClient(
-#         uri,
-#         serverSelectionTimeoutMS=5000,
-#     )
+    uri = os.getenv("URI_TEMPLATE", "")
+    uri_pw = uri.replace("{{user}}", username).replace("{{pw}}", password)
 
-uri = os.getenv("URI_TEMPLATE", "")
-uri = uri.replace("{{user}}", os.getenv("USERNAME_ADMIN", "")).replace("{{pw}}", os.getenv("PASSWORD_ADMIN", ""))
+    client = MongoClient(uri_pw, server_api=ServerApi('1'), serverSelectionTimeoutMS=5000)
 
-client = MongoClient(uri, server_api=ServerApi('1'), serverSelectionTimeoutMS=5000)
-db = client.myDatabase
+    try:
+        client.admin.command("ping")
+        return client
+    except PyMongoError:
+        client.close()
+
+    uri_pub = uri.replace("{{user}}", os.getenv("USERNAME", "")).replace("{{pw}}", os.getenv("PASSWORD", ""))
+    client = MongoClient(uri_pub, server_api=ServerApi('1'), serverSelectionTimeoutMS=5000)
+
+    try:
+        client.admin.command("ping")
+        return client
+    except:
+        client.close()
+        raise
+
+
+def save_client(session_id, client):
+    close_client(session_id)
+    _clients[session_id] = client
+
+
+def get_database(session_id):
+    client = _clients.get(session_id)
+    return client.myDatabase
+
+
+def close_client(session_id):
+    client = _clients.pop(session_id, None)
+    if client is not None:
+        client.close()
+
 
 def convert_date(date_str):
     date = date_str.split('T')[0].split('-')
@@ -44,22 +67,28 @@ def convert_date(date_str):
         int(date[0]), int(date[1]), int(date[2])
     )
 
+
 def handle_decimal(amount: float) -> str:
     if (100 * amount) % 100 == 0:
         return Decimal128('%i' % amount)
     else:
         return Decimal128('%.2f' % amount)
 
+
 def get_new_ref(date):
+    db = get_database(session["db_session_id"])
     season = date.year % 100 + int(date.month >= 6)
     latest_refs = [
-        x['Reference'] for x in db.transactions.find({'Reference': {'$gt': season*1000}})
+        x['Reference'] for x in db.transactions.find(
+            {'Reference': {'$gt': season*1000, '$lt': (season + 1)*1000}}
+        )
     ]
 
     if len(latest_refs):
         return max(latest_refs) + 1
     else:
         return season*1000 + 1
+
 
 def extract_name(name):
     if name is None:
@@ -75,13 +104,16 @@ def extract_name(name):
         'full_name': full_name,
     }
 
+
 def find_collection_link(document_id, collection, field):
     return collection.find_one({field: document_id})
+
 
 def get_names(add_empty=False):
     if not has_request_context():
         return []
 
+    db = get_database(session["db_session_id"])
     names = list(
         {
             'label': f"{x['surname']}, {x['first_name']}",
@@ -93,9 +125,12 @@ def get_names(add_empty=False):
         names = [''] + names
     return names
 
+
 def get_festivals(add_empty=False):
     if not has_request_context():
         return []
+
+    db = get_database(session["db_session_id"])
 
     festivals = list(
         {
@@ -108,9 +143,12 @@ def get_festivals(add_empty=False):
         festivals = [''] + festivals
     return festivals
 
+
 def get_productions(add_empty=False):
     if not has_request_context():
         return []
+
+    db = get_database(session["db_session_id"])
 
     festivals = {
         str(f['_id']): {
@@ -144,9 +182,12 @@ def get_productions(add_empty=False):
         shows = [''] + shows
     return shows
 
+
 def get_names_for_person_update():
     if not has_request_context():
         return []
+
+    db = get_database(session["db_session_id"])
 
     return list(
         {
@@ -156,9 +197,12 @@ def get_names_for_person_update():
         for x in db.people.find({})
     )
 
+
 def get_committee_positions():
     if not has_request_context():
         return []
+
+    db = get_database(session["db_session_id"])
 
     positions = list(
         {
@@ -171,9 +215,12 @@ def get_committee_positions():
     positions.reverse()
     return positions
 
+
 def get_castcrew():
     if not has_request_context():
         return []
+
+    db = get_database(session["db_session_id"])
 
     return list(
         {
@@ -185,7 +232,9 @@ def get_castcrew():
         for x in db.castcrew.find({})
     )
 
+
 def update_form_fill_in_value(collection, field, document_id):
+    db = get_database(session["db_session_id"])
     if not has_request_context():
         return ""
 
@@ -219,59 +268,12 @@ def update_form_fill_in_value(collection, field, document_id):
 
 # ---- MEMBERS ----
 
-def get_member_list(role, seasons, types, persons, columns):
-    if not has_request_context() or role not in {"Committee", "Treasurer", "Public"}:
-        return pd.DataFrame().to_dict('records')
 
-    members = pd.DataFrame(
-        db.members.find({
-            'season': {'$in': seasons},
-            'type': {'$in': types},
-        })
-    )
-    if members.empty:
-        return pd.DataFrame().to_dict('records')
-
-    if persons:
-        person_ids = [ObjectId(p.split('|')[0]) for p in persons]
-        members = members[members['person'].isin(person_ids)]
-
-    members.set_index('_id', inplace=True)
-    people = pd.DataFrame(db.people.find()).set_index('_id')
-    members = members.join(people, 'person')
-
-    if role == "Public":
-        members = members[['season', 'first_name', 'surname']]
-    else:
-        transactions = pd.DataFrame(
-            db.transactions.find({'Type': 'Membership Subscription'})
-        ).set_index('_id')[['Date', 'Amount']]
-
-        try:
-            members = members.join(transactions, 'transaction')
-        except:
-            pass
-
-        mcols = [
-            MEMBER_LIST_COLUMNS.get(col) for col in columns
-            if MEMBER_LIST_COLUMNS.get(col) in members.columns
-        ]
-        for col in ['season', 'surname']:
-            if col not in mcols:
-                mcols.append(col)
-
-        members = members[mcols]
-        for col in ['gdpr', 'payment_amount', 'payment_date']:
-            if col in members.columns:
-                members[col] = members[col].astype(str)
-
-    members.sort_values(['season', 'surname'], inplace=True)
-    
-    return members.to_dict('records')
 
 # ---- PRODUCTIONS ----
 
 def get_production_details(production_id):
+    db = session["database"]
     if not production_id:
         return pd.DataFrame().to_dict('records')
 
@@ -325,7 +327,9 @@ def get_production_details(production_id):
 
     return pd.DataFrame(row_data).to_dict('records')
 
+
 def insert_festival(name, venue, open, close):
+    db = session["database"]
     # if not has_request_context():
     #     return {"error": "No request context."}, 400
 
@@ -346,7 +350,9 @@ def insert_festival(name, venue, open, close):
 
     return f"New festival: {str(new_festival.inserted_id)}" # {"ok": True}, 201
 
+
 def insert_production(name, venue, author, open, close, festival_id):
+    db = session["database"]
     # if not has_request_context():
     #     return {"error": "No request context."}, 400
 
@@ -383,7 +389,9 @@ def insert_production(name, venue, author, open, close, festival_id):
 
     return f"New production: {str(new_production.inserted_id)}" # {"ok": True}, 201
 
+
 def update_production(production_id, venue, author, open_date, close_date, festival_id):
+    db = session["database"]
     if not has_request_context():
         return "" # {"error": "No request context."}, 400
 
@@ -437,7 +445,9 @@ def update_production(production_id, venue, author, open_date, close_date, festi
 
     return "Production updated successfully" # {"ok": True}, 200
 
+
 def delete_production(production_id):
+    db = session["database"]
     # if not has_request_context():
     #     return {"error": "No request context."}, 400
 
@@ -463,6 +473,7 @@ def delete_production(production_id):
 # ---- COMMITTEE ----
 
 def get_committee_list(role, seasons):
+    db = session["database"]
     if not has_request_context() or role not in {"Committee", "Treasurer", "Public"}:
         return pd.DataFrame().to_dict('records')
 
@@ -479,7 +490,9 @@ def get_committee_list(role, seasons):
     committee.sort_values('season', inplace=True)
     return committee.to_dict('records')
 
+
 def insert_committee_member(person_id, season, position):
+    db = session["database"]
     # if not has_request_context():
     #     return {"error": "No request context."}, 400
 
@@ -504,7 +517,9 @@ def insert_committee_member(person_id, season, position):
 
     return f"New committee member: {str(new_committee_member.inserted_id)}" # {"ok": True}, 201
 
+
 def delete_committee_member(committee_id):
+    db = session["database"]
     # if not has_request_context():
     #     return {"error": "No request context."}, 400
 
@@ -524,167 +539,7 @@ def delete_committee_member(committee_id):
 
 # ---- PEOPLE ----
 
-def insert_person(first_name, surname, address, postcode, address_private, home_phone,
-        home_phone_private, mobile, mobile_private, email, email_private, gender,
-        gdpr, committee_email):
-    # if not has_request_context():
-    #     return {"error": "No request context."}, 400
 
-    if not first_name or not surname:
-        return "First name and surname are required." # {"error": "Person, season, and position are required."}, 400
-
-    person_payload = {
-        'first_name': first_name,
-        'surname': surname
-    }
-
-    if db.people.find_one(person_payload):
-        return "Person already exists" # {"error": "Committee member already exists"}, 400
-
-    if address:
-        person_payload['address'] = address
-    if postcode:
-        person_payload['postcode'] = postcode
-    if address_private:
-        person_payload['address_private'] = (address_private == ['private'])
-    if home_phone:
-        person_payload['home_phone'] = home_phone
-    if home_phone_private:
-        person_payload['home_phone_private'] = (home_phone_private == ['private'])
-    if mobile:
-        person_payload['mobile'] = mobile
-    if mobile_private:
-        person_payload['mobile_private'] = (mobile_private == ['private'])
-    if email:
-        person_payload['email'] = email
-    if email_private:
-        person_payload['email_private'] = (email_private == ['private'])
-    if gender:
-        person_payload['gender'] = gender
-    if gdpr:
-        person_payload['gdpr'] = convert_date(gdpr)
-    if committee_email:
-        person_payload['committee_email'] = (
-            committee_email if '@' in committee_email else f'{committee_email}@villageplayers.ch'
-        )
-
-    new_person = db.people.insert_one(person_payload)
-
-    return f"New person: {str(new_person.inserted_id)}" # {"ok": True}, 201
-
-def update_person(person_id, address, postcode, address_private, home_phone,
-        home_phone_private, mobile, mobile_private, email, email_private, gender,
-        gdpr, committee_email):
-    if not has_request_context():
-        return "" # {"error": "No request context."}, 400
-
-    if not person_id:
-        return "Person ID is required." # {"error": "Committee member ID is required."}, 400
-
-    try:
-        person_id = ObjectId(person_id)
-    except Exception as e:
-        return f"Invalid person ID: {e}" # {"error": f"Invalid committee member ID: {e}"}, 400
-
-    update_payload = {
-        '$set': {},
-        '$unset': {}
-    }
-
-    if address:
-        update_payload['$set']['address'] = address
-    else:
-        update_payload['$unset']['address'] = ""
-
-    if postcode:
-        update_payload['$set']['postcode'] = postcode
-    else:
-        update_payload['$unset']['postcode'] = ""
-
-    if address_private:
-        update_payload['$set']['address_private'] = (address_private == ['private'])
-    else:
-        update_payload['$unset']['address_private'] = ""
-
-    if home_phone:
-        update_payload['$set']['home_phone'] = home_phone
-    else:
-        update_payload['$unset']['home_phone'] = ""
-
-    if home_phone_private:
-        update_payload['$set']['home_phone_private'] = (home_phone_private == ['private'])
-    else:
-        update_payload['$unset']['home_phone_private'] = ""
-
-    if mobile:
-        update_payload['$set']['mobile'] = mobile
-    else:
-        update_payload['$unset']['mobile'] = ""
-
-    if mobile_private:
-        update_payload['$set']['mobile_private'] = (mobile_private == ['private'])
-    else:
-        update_payload['$unset']['mobile_private'] = ""
-
-    if email:
-        update_payload['$set']['email'] = email
-    else:
-        update_payload['$unset']['email'] = ""
-
-    if email_private:
-        update_payload['$set']['email_private'] = (email_private == ['private'])
-    else:
-        update_payload['$unset']['email_private'] = ""
-
-    if gender:
-        update_payload['$set']['gender'] = gender
-    else:
-        update_payload['$unset']['gender'] = ""
-
-    if gdpr:
-        update_payload['$set']['gdpr'] = convert_date(gdpr)
-    else:
-        update_payload['$unset']['gdpr'] = ""
-
-    if committee_email:
-        update_payload['$set']['committee_email'] = (
-            committee_email if '@' in committee_email else f'{committee_email}@villageplayers.ch'
-        )
-    else:
-        update_payload['$unset']['committee_email'] = ""
-
-    result = db.people.update_one({'_id': person_id}, update_payload)
-    if result.modified_count == 0:
-        return "Person not found or no data changes" # {"error": "Committee member not found"}, 404
-
-    return "Person updated successfully" # {"ok": True}, 200
-
-def delete_person(person_id):
-    # if not has_request_context():
-    #     return {"error": "No request context."}, 400
-
-    if not person_id:
-        return "Person ID is required." # {"error": "Committee member ID is required."}, 400
-
-    try:
-        person_id = ObjectId(person_id)
-    except Exception as e:
-        return f"Invalid person ID: {e}" # {"error": f"Invalid committee member ID: {e}"}, 400
-
-    if find_collection_link(person_id, db.members, 'person'):
-        return "Person cannot be deleted - link to Members"
-    if find_collection_link(person_id, db.transactions, 'Recipient'):
-        return "Person cannot be deleted - link to Transactions"
-    if find_collection_link(person_id, db.castcrew, 'person'):
-        return "Person cannot be deleted - link to Cast & Crew"
-    if find_collection_link(person_id, db.committee, 'holder'):
-        return "Person cannot be deleted - link to Committee"
-
-    result = db.people.delete_one({'_id': person_id})
-    if result.deleted_count == 0:
-        return "Person not found" # {"error": "Committee member not found"}, 404
-
-    return "Person deleted successfully" # {"ok": True}, 200
 
 # ---- CAST & CREW ----
 
@@ -710,6 +565,7 @@ def insert_castcrew(person_id, production_id, role, name):
     new_castcrew = db.castcrew.insert_one(cast_crew_payload)
 
     return f"New Cast or Crew Member: {str(new_castcrew.inserted_id)}" # {"ok": True}, 201
+
 
 def update_castcrew(castcrew_id, name):
     if not has_request_context():
@@ -739,6 +595,7 @@ def update_castcrew(castcrew_id, name):
 
     return "Role updated successfully" # {"ok": True}, 200
 
+
 def delete_castcrew(castcrew_id):
     # if not has_request_context():
     #     return {"error": "No request context."}, 400
@@ -759,86 +616,4 @@ def delete_castcrew(castcrew_id):
 
 # ---- TRANSACTIONS ----
 
-def insert_misc_transaction(t_type, date, amount, description, recipient, recipient_text, production_id):
-    payload = {
-        'Reference': get_new_ref(convert_date(date)),
-        'Date': convert_date(date),
-        'Amount': handle_decimal(amount),
-        'Type': t_type,
-    }
-    if recipient_text:
-        payload['Recipient'] = recipient_text
-    elif recipient:
-        payload['Recipient'] = ObjectId(recipient)
-    if description:
-        payload['Description'] = description
-    if production_id:
-        payload['Production'] = ObjectId(production_id)
 
-    new_transaction = db.transactions.insert_one(payload)
-
-    return f"New transaction: {str(new_transaction.inserted_id)}"
-
-def insert_new_member(date, amount, m_type, season, new_1):
-    name = extract_name(new_1)
-    if not m_type or not season or not name:
-        return f"Type, Season and Name required: {m_type}, {season}, {name}"
-
-    transaction_payload = {
-        'Reference': get_new_ref(convert_date(date)),
-        'Date': convert_date(date),
-        'Amount': handle_decimal(amount),
-        'Type': 'Membership Subscription',
-        'Description': name['full_name'],
-    }
-
-    message = f"New transaction: {transaction_payload['Reference']}"
-
-    person_payload = {
-        'first_name': name['first_name'],
-        'surname': name['surname'],
-    }
-    person = db.people.find_one(person_payload)
-    if person:
-        person_id = person['_id']
-    else:
-        person_payload['email_private'] = True
-        new_person = db.people.insert_one(person_payload)
-        person_id = new_person.inserted_id
-        message += f"; New person: {person_id}"
-
-    member_payload = {
-        'season': season,
-        'person': person_id,
-    }
-    member = db.members.find_one(member_payload)
-    if member:
-        transaction_payload['existing_member'] = member['_id']
-        new_transaction = db.transactions.insert_one(transaction_payload)
-    else:
-        new_transaction = db.transactions.insert_one(transaction_payload)
-        member_payload['type'] = m_type
-        member_payload['payment'] = new_transaction.inserted_id
-        member_payload['carry_over'] = False
-
-        new_member = db.members.insert_one(member_payload)
-        message += f"; New member: {new_member.inserted_id}"
-
-    return message
-
-def insert_transaction(t_type, date, amount, description, recipient, recipient_text,
-                        m_type, season, renew, new_1, production_id): # new_2, new_3, existing, 
-    # if not has_request_context():
-    #     return {"error": "No request context."}, 400
-
-    if not t_type or not date or not amount:
-        return "Type, Date, and Amount are required." # {"error": "Person, season, and position are required."}, 400
-
-    if t_type == 'Membership Subscription':
-        return insert_new_member(date, amount, m_type, season, new_1)
-    elif t_type in {'Production', "Entr'Acts", 'Materials', 'Subscriptions', 'Other'}:
-        return insert_misc_transaction(
-            t_type, date, amount, description, recipient, recipient_text, production_id
-        )
-
-    return "" # f"New Cast or Crew Member: {str(new_castcrew.inserted_id)}" # {"ok": True}, 201
