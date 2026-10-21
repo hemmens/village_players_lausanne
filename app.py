@@ -151,9 +151,8 @@ def debug_login():
     try:
         client = make_client(username, password)
     except PyMongoError:
-        return redirect(
-            url_for("index"), error="Database connection unavailable."
-        ), 503
+        print("Error: Database connection unavailable.")
+        return redirect(url_for("index"))
 
     # Replace any previous login/session state.
     old_id = session.pop("db_session_id", None)
