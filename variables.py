@@ -22,8 +22,8 @@ MEMBER_LIST_COLUMNS = {
     'Email Private': 'email_private',
     'Gender': 'gender',
     'GDPR': 'gdpr',
-    'Payment Amount': 'payment_amount',
-    'Payment Date': 'payment_date',
+    'Payment Amount': 'Amount',
+    'Payment Date': 'Date',
 }
 MEMBER_TYPES = [
     "Full",

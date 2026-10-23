@@ -1,8 +1,9 @@
 from current_role import current_role
 from dash import Input, Output, State, ctx
-from database import (
-    get_festivals, get_productions, get_production_details, insert_festival,
-    insert_production, update_form_fill_in_value, update_production, delete_production
+from database import get_festivals, get_productions, update_form_fill_in_value
+from productions.database import (
+    get_production_costs, get_production_details, insert_production,
+    update_production, delete_production
 )
 from update_mapping import update_mapping
 
@@ -34,6 +35,13 @@ def register_productions_lookup_callbacks(app, server):
     )
     def update_row_data(production_id):
         return get_production_details(production_id)
+
+    @app.callback(
+        Output('f-productions-costs', 'rowData'),
+        Input('f-productions-select', 'value'),
+    )
+    def update_row_data_costs(production_id):
+        return get_production_costs(production_id)
 
 
 def register_festivals_insert_callbacks(app, server):
