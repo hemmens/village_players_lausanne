@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>Village Players Database Interface</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
+</head>
+<body>
+  <header>
+    <strong>Village Players Database Interface</strong>
+    <span class="role">Access: {{ role }}</span>
+    {% if role in ("Committee", "Treasurer") %}
+    <form method="post" action="{{ url_for('logout') }}">
+      <button class="secondary" type="submit">Sign out</button>
+    </form>
+    {% endif %}
+  </header>
+
+  {% with messages = get_flashed_messages(with_categories=true) %}
+    {% for category, message in messages %}
+      <div class="notice {{ category }}">{{ message }}</div>
+    {% endfor %}
+  {% endwith %}
+
+  <main>
+    {% if config.DEBUG %}
+    <section class="card">
+      <h1>Debug Role</h1>
+      <form method="post" action="{{ url_for('set_debug_role') }}">
+        <select name="role" onchange="this.form.submit()">
+            <option value="Awaiting Connection" {% if role == "Awaiting Connection" %}selected{% endif %}>
+                Awaiting Connection
+            </option>
+            <option value="Public" {% if role == "Public" %}selected{% endif %}>
+                Public
+            </option>
+            <option value="Committee" {% if role == "Committee" %}selected{% endif %}>
+                Committee
+            </option>
+            <option value="Treasurer" {% if role == "Treasurer" %}selected{% endif %}>
+                Treasurer
+            </option>
+        </select>
+    </form>
+    <form method="post" action="{{ url_for('debug_login') }}">
+    <button class="secondary" type="submit">Connect</button>
+    </form>
+    </section>
+    {% endif %}
+
+    <section class="card">
+        {% if role == "Awaiting Connection" %}
+        <form method="post" action="{{ url_for('public_login') }}">
+        <button class="secondary" type="submit">Connect as Public</button>
+        </form>
+        <a class="button secondary" href="{{ url_for('login') }}">Sign in</a>
+        {% else %}
+        <a class="button secondary" href="/members/lookup/">Members</a>
+        <a class="button secondary" href="/productions/lookup/">Productions</a>
+        <a class="button secondary" href="/committee/lookup/">Committee</a>
+        {% if role != "Public" %}
+        <a class="button secondary" href="/castcrew/insert/">Cast & Crew</a>
+        <a class="button secondary" href="/people/insert/">People</a>
+        <a class="button secondary" href="/balances/insert/">Balances</a>
+        <a class="button secondary" href="/transactions/insert/">Transactions</a>
+        {% endif %}
+        {% endif %}
+    </section>
+  </main>
+
+<!-- <script>
+document.querySelector("#load").addEventListener("click", async () => {
+  const r = await fetch("/api/data");
+  document.querySelector("#output").textContent =
+    JSON.stringify(await r.json(), null, 2);
+});
+
+const save = document.querySelector("#save");
+if (save) {
+  save.addEventListener("click", async () => {
+    const value = document.querySelector("#value").value;
+    const r = await fetch("/api/data", {
+      method: "POST",
+      headers: {"Content-Type": "application/json"},
+      body: JSON.stringify({value})
+    });
+    document.querySelector("#saveResult").textContent =
+      r.ok ? "Saved." : (await r.json()).error;
+  });
+}
+</script> -->
+</body>
+</html>
