@@ -1,9 +1,8 @@
-from current_role import current_role
 from dash import Input, Output, State, ctx
-from database import (
-    get_names, get_castcrew, get_productions, update_form_fill_in_value, insert_castcrew,
-    update_castcrew, delete_castcrew
-)
+
+from castcrew.database import delete_castcrew, insert_castcrew, update_castcrew
+from current_role import current_role
+from database import get_names, get_castcrew, get_productions, update_form_fill_in_value
 from update_mapping import update_mapping
 
 

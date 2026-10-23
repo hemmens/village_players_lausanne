@@ -14,7 +14,7 @@ def insert_misc_transaction(t_type, date, amount, description, recipient, recipi
     if recipient_text:
         payload['Recipient'] = recipient_text
     elif recipient:
-        payload['Recipient'] = ObjectId(recipient)
+        payload['Recipient'] = ObjectId(recipient.split('|')[0])
     if description:
         payload['Description'] = description
     if production_id:

@@ -1,9 +1,8 @@
-from current_role import current_role
 from dash import Input, Output, State
-from database import (
-    delete_committee_member, get_committee_list,
-    get_committee_positions, get_names, insert_committee_member
-)
+
+from committee.database import get_committee_list, insert_committee_member, delete_committee_member
+from current_role import current_role
+from database import get_committee_positions, get_names
 
 def register_committee_lookup_callbacks(app, server):
     @app.callback(

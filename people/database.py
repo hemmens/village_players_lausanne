@@ -6,8 +6,8 @@ from database import convert_date, find_collection_link, get_database
 def insert_person(first_name, surname, address, postcode, address_private, home_phone,
         home_phone_private, mobile, mobile_private, email, email_private, gender,
         gdpr, committee_email):
-    # if not has_request_context():
-    #     return {"error": "No request context."}, 400
+    if not has_request_context():
+        return ""
 
     if not first_name or not surname:
         return "First name and surname are required." # {"error": "Person, season, and position are required."}, 400
@@ -20,7 +20,7 @@ def insert_person(first_name, surname, address, postcode, address_private, home_
     db = get_database(session["db_session_id"])
 
     if db.people.find_one(person_payload):
-        return "Person already exists" # {"error": "Committee member already exists"}, 400
+        return "Person already exists"
 
     if address:
         person_payload['address'] = address
@@ -51,14 +51,14 @@ def insert_person(first_name, surname, address, postcode, address_private, home_
 
     new_person = db.people.insert_one(person_payload)
 
-    return f"New person: {str(new_person.inserted_id)}" # {"ok": True}, 201
+    return f"New person: {str(new_person.inserted_id)}"
 
 
 def update_person(person_id, address, postcode, address_private, home_phone,
         home_phone_private, mobile, mobile_private, email, email_private, gender,
         gdpr, committee_email):
     if not has_request_context():
-        return "" # {"error": "No request context."}, 400
+        return ""
 
     if not person_id:
         return "Person ID is required." # {"error": "Committee member ID is required."}, 400
@@ -139,22 +139,22 @@ def update_person(person_id, address, postcode, address_private, home_phone,
 
     result = db.people.update_one({'_id': person_id}, update_payload)
     if result.modified_count == 0:
-        return "Person not found or no data changes" # {"error": "Committee member not found"}, 404
+        return "Person not found or no data changes"
 
-    return "Person updated successfully" # {"ok": True}, 200
+    return "Person updated successfully"
 
 
 def delete_person(person_id):
-    # if not has_request_context():
-    #     return {"error": "No request context."}, 400
+    if not has_request_context():
+        return ""
 
     if not person_id:
-        return "Person ID is required." # {"error": "Committee member ID is required."}, 400
+        return "Person ID is required."
 
     try:
         person_id = ObjectId(person_id)
     except Exception as e:
-        return f"Invalid person ID: {e}" # {"error": f"Invalid committee member ID: {e}"}, 400
+        return f"Invalid person ID: {e}"
     
     db = get_database(session["db_session_id"])
 
@@ -169,6 +169,6 @@ def delete_person(person_id):
 
     result = db.people.delete_one({'_id': person_id})
     if result.deleted_count == 0:
-        return "Person not found" # {"error": "Committee member not found"}, 404
+        return "Person not found"
 
-    return "Person deleted successfully" # {"ok": True}, 200
+    return "Person deleted successfully"
