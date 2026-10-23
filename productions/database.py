@@ -6,9 +6,13 @@ from flask import has_request_context, session
 from database import convert_date, find_collection_link, get_database
 
 def get_production_details(production_id):
-    db = get_database(session["db_session_id"])
     if not production_id:
         return pd.DataFrame().to_dict('records')
+
+    if "db_session_id" not in session.keys():
+        return pd.DataFrame().to_dict('records')
+
+    db = get_database(session["db_session_id"])
 
     festival = db.festivals.find_one({'_id': ObjectId(production_id)})
     if festival:
@@ -62,9 +66,13 @@ def get_production_details(production_id):
 
 
 def get_production_costs(production_id):
-    db = get_database(session["db_session_id"])
     if not production_id:
         return pd.DataFrame().to_dict('records')
+
+    if "db_session_id" not in session.keys():
+        return pd.DataFrame().to_dict('records')
+
+    db = get_database(session["db_session_id"])
 
     transactions = {'main': db.transactions.find({'Production': ObjectId(production_id)})}
 
@@ -110,39 +118,21 @@ def get_production_costs(production_id):
     return pd.DataFrame(output).sort_values('reference').to_dict('records')
 
 
-def insert_festival(name, venue, open, close):
-    db = session["database"]
-    # if not has_request_context():
-    #     return {"error": "No request context."}, 400
-
-    if not name or not open or not close:
-        return "Name and performance dates are required." # {"error": "Person, season, and position are required."}, 400
-
-    festival_payload = {'title': name}
-
-    if db.festivals.find_one(festival_payload):
-        return "Festival name already exists" # {"error": "Committee member already exists"}, 400
-
-    festival_payload['open_date'] = convert_date(open)
-    festival_payload['close_date'] = convert_date(close)
-    if venue:
-        festival_payload['venue'] = venue
-
-    new_festival = db.festivals.insert_one(festival_payload)
-
-    return f"New festival: {str(new_festival.inserted_id)}" # {"ok": True}, 201
-
-
-def insert_production(name, venue, author, open, close, festival_id):
-    db = get_database(session["db_session_id"])
+def insert_production(p_type, name, venue, author, open, close, festival_id):
     if not has_request_context():
         return ""
 
-    if not name or not (festival_id or (open and close)):
-        return "Name and either performance dates or festival are required."
+    if p_type == 'Production' and (not name or not (festival_id or (open and close))):
+        return "Title and either performance dates or festival are required"
+
+    if p_type == 'Festival' and (not name or not open or not close):
+        return "Title and performance dates are required"
 
     production_payload = {'title': name}
     if festival_id:
+        if p_type == 'Festival':
+            return "A festival cannot be part of another festival"
+
         try:
             festival_id = ObjectId(festival_id)
         except Exception as e:
@@ -159,21 +149,28 @@ def insert_production(name, venue, author, open, close, festival_id):
             'close_date': {'$gte': production_payload['open_date']},
         }
 
-    if db.productions.find_one(production_filter):
-        return "Production already exists"
+    db = get_database(session["db_session_id"])
+
+    collection = db.festivals if p_type == 'Festival' else db.productions
+
+    if collection.find_one(production_filter):
+        return "Production or Festival already exists"
 
     if venue:
+        if festival_id:
+            return "Venue can only be set by the festival"
         production_payload['venue'] = venue
     if author:
+        if p_type == 'Festival':
+            return "Only a production can have an author"
         production_payload['author'] = author
 
-    new_production = db.productions.insert_one(production_payload)
+    new_production = collection.insert_one(production_payload)
 
     return f"New production: {str(new_production.inserted_id)}"
 
 
 def update_production(production_id, venue, author, open_date, close_date, festival_id):
-    db = get_database(session["db_session_id"])
     if not has_request_context():
         return ""
 
@@ -221,6 +218,8 @@ def update_production(production_id, venue, author, open_date, close_date, festi
     else:
         update_payload['$unset']['festival'] = ""
 
+    db = get_database(session["db_session_id"])
+
     result = db.productions.update_one({'_id': production_id}, update_payload)
     if result.modified_count == 0:
         return "Production not found or no data changes"
@@ -229,7 +228,6 @@ def update_production(production_id, venue, author, open_date, close_date, festi
 
 
 def delete_production(production_id):
-    db = session["database"]
     if not has_request_context():
         return ""
 
@@ -241,13 +239,19 @@ def delete_production(production_id):
     except Exception as e:
         return f"Invalid person ID: {e}"
 
+    db = get_database(session["db_session_id"])
+
     if find_collection_link(production_id, db.transactions, 'Production'):
         return "Production cannot be deleted - link to Transactions"
     if find_collection_link(production_id, db.castcrew, 'production'):
         return "Production cannot be deleted - link to Cast & Crew"
+    if find_collection_link(production_id, db.productions, 'festival'):
+        return "Festival cannot be deleted - link to Productions"
 
     result = db.productions.delete_one({'_id': production_id})
     if result.deleted_count == 0:
-        return "Production not found"
+        result = db.festivals.delete_one({'_id': production_id})
+    if result.deleted_count == 0:
+        return "Production or Festival not found"
 
-    return "Production deleted successfully"
+    return "Production or Festival deleted successfully"

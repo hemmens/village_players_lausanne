@@ -120,6 +120,7 @@ def register_productions_insert_callbacks(app, server):
     @app.callback(
         Output('a-productions-message', 'children'),
         Input('a-productions-insert', 'n_clicks'),
+        State('a-productions-type', 'value'),
         State('a-productions-name', 'value'),
         State('a-productions-venue', 'value'),
         State('a-productions-author', 'value'),
@@ -128,8 +129,8 @@ def register_productions_insert_callbacks(app, server):
         State('a-productions-festival', 'value'),
         prevent_initial_call=True
     )
-    def new_production(n_clicks, name, venue, author, open, close, festival):
-        return insert_production(name, venue, author, open, close, festival)
+    def new_production(n_clicks, p_type, name, venue, author, open, close, festival):
+        return insert_production(p_type, name, venue, author, open, close, festival)
 
 
 def register_productions_update_callbacks(app, server):

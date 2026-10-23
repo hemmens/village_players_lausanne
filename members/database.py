@@ -11,7 +11,10 @@ SORT_COLUMNS = ['season', 'surname']
 def get_member_list(role, seasons, types, persons, columns):
     if not has_request_context() or role not in {"Committee", "Treasurer", "Public"}:
         return pd.DataFrame().to_dict('records')
-    
+
+    if "db_session_id" not in session.keys():
+        return pd.DataFrame().to_dict('records')
+
     db = get_database(session["db_session_id"])
 
     members = pd.DataFrame(

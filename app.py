@@ -109,7 +109,6 @@ def login():
     session["db_session_id"] = db_session_id
 
     db = client.myDatabase
-    session["database"] = client.myDatabase
     user = db.users.find_one({'username': username})
     if user is None or user.get('role', 'Public') == 'Public':
         session["username"] = None
@@ -200,7 +199,7 @@ def logout():
         close_client(db_session_id)
 
     session.clear()
-    return redirect(url_for("login"))
+    return redirect(url_for("index"))
 
 
 dashboards['members/lookup'].layout = members_lookup_layout

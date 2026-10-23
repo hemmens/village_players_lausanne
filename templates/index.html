@@ -10,9 +10,9 @@
   <header>
     <strong>Village Players Database Interface</strong>
     <span class="role">Access: {{ role }}</span>
-    {% if role in ("Committee", "Treasurer") %}
+    {% if role != "Awaiting Connection" %}
     <form method="post" action="{{ url_for('logout') }}">
-      <button class="secondary" type="submit">Sign out</button>
+      <button class="secondary" type="submit">Disconnect</button>
     </form>
     {% endif %}
   </header>
