@@ -120,6 +120,8 @@ def get_names(add_empty=False):
         }
         for x in db.people.find({})
     )
+    names = pd.DataFrame(names).sort_values('label')
+    names = names.to_dict('records')
     if add_empty:
         names = [''] + names
     return names

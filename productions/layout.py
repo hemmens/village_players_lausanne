@@ -59,7 +59,7 @@ productions_insert_layout = [
             dcc.Dropdown(
                 id='a-productions-type', options=['Production', 'Festival'], value='Production'
             ),
-            html.Label("Name: "),
+            html.Label("Title: "),
             dcc.Input(id='a-productions-name', type='text'),
             html.Label("Venue: "),
             dcc.Input(id='a-productions-venue', type='text'),

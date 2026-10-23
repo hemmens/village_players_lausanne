@@ -1,11 +1,11 @@
 from current_role import current_role
-from dash import Input, Output, State, ctx
+from dash import Input, Output, State, ctx, no_update
 from database import get_festivals, get_productions, update_form_fill_in_value
 from productions.database import (
     get_production_costs, get_production_details, insert_production,
     update_production, delete_production
 )
-from update_mapping import update_mapping
+from update_mapping import grey_out, update_mapping
 
 def register_productions_lookup_callbacks(app, server):
     @app.callback(
@@ -44,41 +44,6 @@ def register_productions_lookup_callbacks(app, server):
         return get_production_costs(production_id)
 
 
-def register_festivals_insert_callbacks(app, server):
-    @app.callback(
-        Output('a-festivals-role', 'data'),
-        Input('a-festivals-loaded', 'data'),
-    )
-    def update_role(loaded):
-        return current_role(server)
-    
-    @app.callback(
-        Output('a-festivals-access', 'hidden'),
-        Input('a-festivals-role', 'data'),
-    )
-    def update_access_hidden(role):
-        return role not in {"Committee", "Treasurer"}
-    
-    @app.callback(
-        Output('a-festivals-no-access', 'hidden'),
-        Input('a-festivals-role', 'data'),
-    )
-    def update_no_access_hidden(role):
-        return role in {"Committee", "Treasurer"}
-
-    @app.callback(
-        Output('a-festivals-message', 'children'),
-        Input('a-festivals-insert', 'n_clicks'),
-        State('a-festivals-name', 'value'),
-        State('a-festivals-venue', 'value'),
-        State('a-festivals-open', 'date'),
-        State('a-festivals-close', 'date'),
-        prevent_initial_call=True
-    )
-    def new_festival(n_clicks, name, venue, open, close):
-        return insert_festival(name, venue, open, close)
-
-
 def register_productions_insert_callbacks(app, server):
     @app.callback(
         Output('a-productions-role', 'data'),
@@ -107,6 +72,50 @@ def register_productions_insert_callbacks(app, server):
     )
     def update_festivals(loaded):
         return get_festivals(add_empty=True)
+
+    for field in ['venue', 'open', 'close']:
+        @app.callback(
+            Output(f'a-productions-{field}', 'disabled'),
+            Input('a-productions-festival', 'value'),
+        )
+        def disable_production_field(festival):
+            return festival
+
+        @app.callback(
+            Output(f'a-productions-{field}', 'style'),
+            Input('a-productions-festival', 'value'),
+        )
+        def greyout_production_field(festival):
+            return grey_out if festival else {}
+
+        @app.callback(
+            Output(f'a-productions-{field}', 'value' if field == 'venue' else 'date'),
+            Input('a-productions-festival', 'value'),
+        )
+        def empty_production_field(festival):
+            return None if festival else no_update
+
+    for field in ['author', 'festival']:
+        @app.callback(
+            Output(f'a-productions-{field}', 'disabled'),
+            Input('a-productions-type', 'value'),
+        )
+        def disable_festival_field(p_type):
+            return p_type == 'Festival'
+
+        @app.callback(
+            Output(f'a-productions-{field}', 'style'),
+            Input('a-productions-type', 'value'),
+        )
+        def greyout_festival_field(p_type):
+            return grey_out if p_type == 'Festival' else {}
+
+        @app.callback(
+            Output(f'a-productions-{field}', 'value'),
+            Input('a-productions-type', 'value'),
+        )
+        def empty_festival_field(p_type):
+            return "" if p_type == 'Festival' else no_update
 
     @app.callback(
         Output('a-productions-message', 'children'),
