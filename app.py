@@ -23,8 +23,8 @@ from committee.layout import (
     committee_insert_layout, committee_lookup_layout, committee_update_layout
 )
 from database import make_client, save_client, close_client
-from members.callbacks import register_member_lookup_callbacks
-from members.layout import members_lookup_layout
+from members.callbacks import register_member_lookup_callbacks, register_member_search_callbacks
+from members.layout import members_lookup_layout, members_search_layout
 from people.callbacks import register_people_insert_callbacks, register_people_update_callbacks
 from people.layout import people_insert_layout, people_update_layout
 from productions.callbacks import (
@@ -47,7 +47,7 @@ app.secret_key = os.getenv("FLASK_SECRET_KEY", "")
 
 dashboards = {}
 for route in [
-    'members/lookup',
+    'members/lookup', 'members/search',
     'productions/lookup', 'productions/insert', 'productions/update',
     'committee/lookup', 'committee/insert', 'committee/update',
     'castcrew/insert', 'castcrew/update',
@@ -204,6 +204,8 @@ def logout():
 
 dashboards['members/lookup'].layout = members_lookup_layout
 register_member_lookup_callbacks(dashboards['members/lookup'], app)
+dashboards['members/search'].layout = members_search_layout
+register_member_search_callbacks(dashboards['members/search'])
 dashboards['productions/lookup'].layout = productions_lookup_layout
 register_productions_lookup_callbacks(dashboards['productions/lookup'], app)
 dashboards['productions/insert'].layout = productions_insert_layout
