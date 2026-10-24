@@ -70,3 +70,45 @@ def get_member_list(role, seasons, types, persons, columns):
     members.sort_values(SORT_COLUMNS, inplace=True)
     
     return members.to_dict('records')
+
+
+def get_member_check(first_name, surname, email, season):
+    if not has_request_context():
+        return None
+
+    if not season:
+        return "Season is required"
+
+    if not email and not (first_name and surname):
+        return "Please provide either an email or both names"
+
+    db = get_database(session["db_session_id"])
+
+    people = pd.DataFrame(db.people.find({}))
+    email_match = people[people.email.apply(lambda x: x == email)] if email else pd.DataFrame()
+
+    if email_match.shape[0]:
+        person = email_match.iloc[0]
+    elif first_name and surname:
+        name_match = people[
+            people.apply(
+                lambda row: (
+                    row.first_name.strip().lower() == first_name.strip().lower()
+                ) and (
+                    row.surname.strip().lower() == surname.strip().lower()
+                ),
+            axis=1)
+        ]
+        if name_match.shape[0]:
+            person = name_match.iloc[0]
+        else:
+            return "No member found"
+    else:
+        return "No member found"
+
+    member = db.members.find_one({'person': ObjectId(person['_id']), 'season': season})
+
+    if member:
+        return f"{person.first_name.title()} {person.surname.title()} is a {season} member"
+
+    return "No member found"

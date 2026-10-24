@@ -56,10 +56,11 @@
         </form>
         <a class="button secondary" href="{{ url_for('login') }}">Sign in</a>
         {% else %}
-        <a class="button secondary" href="/members/lookup/">Members</a>
+        <a class="button secondary" href="/members/search/">Member Check</a>
         <a class="button secondary" href="/productions/lookup/">Productions</a>
         <a class="button secondary" href="/committee/lookup/">Committee</a>
         {% if role != "Public" %}
+        <a class="button secondary" href="/members/lookup/">Members</a>
         <a class="button secondary" href="/castcrew/insert/">Cast & Crew</a>
         <a class="button secondary" href="/people/insert/">People</a>
         <a class="button secondary" href="/balances/insert/">Balances</a>

@@ -3,7 +3,7 @@ from current_role import current_role
 from datetime import datetime
 from dash import Input, Output, State, dcc
 from database import get_names
-from members.database import get_member_list
+from members.database import get_member_check, get_member_list
 from variables import MEMBER_LIST_COLUMNS
 
 def register_member_lookup_callbacks(app, server):
@@ -82,3 +82,17 @@ def register_member_lookup_callbacks(app, server):
         df.to_excel(writer)
         writer.close()
         return dcc.send_file(f'vp_members_{today}.xlsx')
+
+
+def register_member_search_callbacks(app):
+    @app.callback(
+        Output('s-member-message', 'children'),
+        Input('s-member-search', 'n_clicks'),
+        State('s-member-first-name', 'value'),
+        State('s-member-surname', 'value'),
+        State('s-member-email', 'value'),
+        State('s-member-season', 'value'),
+        prevent_initial_call=True
+    )
+    def check_member(n_clicks, first_name, surname, email, season):
+        return get_member_check(first_name, surname, email, season)
