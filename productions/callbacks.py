@@ -39,9 +39,13 @@ def register_productions_lookup_callbacks(app, server):
     @app.callback(
         Output('f-productions-costs', 'rowData'),
         Input('f-productions-select', 'value'),
+        State('f-productions-role', 'data')
     )
-    def update_row_data_costs(production_id):
-        return get_production_costs(production_id)
+    def update_row_data_costs(production_id, role):
+        if role in {'Committee', 'Treasurer'}:
+            return get_production_costs(production_id)
+
+        return no_update
 
 
 def register_productions_insert_callbacks(app, server):

@@ -108,8 +108,8 @@ def login():
     save_client(db_session_id, client)
     session["db_session_id"] = db_session_id
 
-    db = client.myDatabase
-    user = db.users.find_one({'username': username})
+    users = client.myDatabase.dbusers
+    user = users.find_one({'username': username})
     if user is None or user.get('role', 'Public') == 'Public':
         session["username"] = None
         session["role"] = "Public"
@@ -183,6 +183,9 @@ def debug_login():
 def index():
     if 'role' not in session.keys():
         session["role"] = "Awaiting Connection"
+    else:
+        session["debug_role"] = session["role"]
+
     if 'debug_role' not in session.keys():
         session["debug_role"] = "Awaiting Connection"
 
