@@ -15,6 +15,13 @@ def register_member_lookup_callbacks(app, server):
         return current_role(server)
     
     @app.callback(
+        Output('f-member-no-access', 'hidden'),
+        Input('f-member-role', 'data'),
+    )
+    def update_types_label(role):
+        return role in {"Committee", "Treasurer"}
+    
+    @app.callback(
         Output('f-member-access', 'hidden'),
         Input('f-member-role', 'data'),
     )

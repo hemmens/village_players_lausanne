@@ -120,13 +120,46 @@ def insert_new_member(date, amount, m_type, season, new_1):
     return message
 
 
+def insert_storage(date, amount, recipient_text):
+    if not date or not amount or not recipient_text:
+        return "Date, Amount, and Recipient required"
+
+    db = get_database(session["db_session_id"])
+
+    transaction_payload = {
+        'Reference': get_new_ref(convert_date(date)),
+        'Date': convert_date(date),
+        'Amount': handle_decimal(amount),
+        'Type': 'Storage',
+        'Description': recipient_text,
+    }
+
+    db.transactions.insert_one(transaction_payload)
+
+    return f"New transaction: {transaction_payload['Reference']}"
+
+def insert_bank_charge(date, amount):
+    if not date or not amount:
+        return "Date and Amount required"
+
+    db = get_database(session["db_session_id"])
+
+    transaction_payload = {
+        'Reference': get_new_ref(convert_date(date)),
+        'Date': convert_date(date),
+        'Amount': handle_decimal(amount),
+        'Type': 'Bank Charges',
+    }
+
+    db.transactions.insert_one(transaction_payload)
+
+    return f"New transaction: {transaction_payload['Reference']}"
+
+
 def insert_transaction(t_type, date, amount, description, recipient, recipient_text,
                         m_type, season, renew, new_1, production_id): # new_2, new_3, existing, 
-    # if not has_request_context():
-    #     return {"error": "No request context."}, 400
-
     if not t_type or not date or not amount:
-        return "Type, Date, and Amount are required." # {"error": "Person, season, and position are required."}, 400
+        return "Type, Date, and Amount are required."
 
     if t_type == 'Membership Subscription':
         if new_1 and not renew:
@@ -137,5 +170,9 @@ def insert_transaction(t_type, date, amount, description, recipient, recipient_t
         return insert_misc_transaction(
             t_type, date, amount, description, recipient, recipient_text, production_id
         )
+    elif t_type == 'Storage':
+        return insert_storage(date, amount, recipient_text)
+    elif t_type == 'Bank Charges':
+        return insert_bank_charge(date, amount)
 
-    return "" # f"New Cast or Crew Member: {str(new_castcrew.inserted_id)}" # {"ok": True}, 201
+    return "Transaction Type not recognised"

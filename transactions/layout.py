@@ -8,8 +8,7 @@ transactions_insert_layout = [
     html.H1('Village Players Database Interface'),
     html.H2('Transactions - Insert'),
     html.Div(
-        "Treasurer access only", id='a-transactions-no-access',
-        hidden=False
+        "Treasurer access only", id='a-transactions-no-access', hidden=False
     ),
     html.Div(
         [
@@ -31,12 +30,12 @@ transactions_insert_layout = [
             dcc.Dropdown(id='a-transactions-season', options=[''] + SEASONS),
             html.Label("Renewing Member(s): "),
             dcc.Dropdown(id='a-transactions-renew', multi=True, options=[]),
-            html.Label("New Member: "),
+            html.Label("New Member 1: "),
             dcc.Input(id='a-transactions-new-1', type='text'),
-            # html.Label("New Member 2: "),
-            # dcc.Input(id='a-transactions-new-2', type='text'),
-            # html.Label("New Member 3: "),
-            # dcc.Input(id='a-transactions-new-3', type='text'),
+            html.Label("New Member 2: "),
+            dcc.Input(id='a-transactions-new-2', type='text'),
+            html.Label("New Member 3: "),
+            dcc.Input(id='a-transactions-new-3', type='text'),
             # html.Label("Existing Member: "),
             # dcc.Dropdown(id='a-transactions-existing', options=[]),
             html.Label("Production: "),
