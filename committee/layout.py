@@ -15,8 +15,7 @@ committee_lookup_layout = [
         columnDefs=[
             {'field': 'season', 'headerName': 'Season'},
             {'field': 'position', 'headerName': 'Position'},
-            {'field': 'first_name', 'headerName': 'First Name'},
-            {'field': 'surname', 'headerName': 'Surname'},
+            {'field': 'full_name', 'headerName': 'Name'},
             {'field': 'committee_email', 'headerName': 'Email'},
         ]
     ),

@@ -6,6 +6,12 @@ from flask import has_request_context, session
 from database import get_database
 from variables import MEMBER_LIST_COLUMNS
 
+NO_MEMBER_MESSAGE = """
+No member found. Email checks are more reliable, if you haven't tried that already. \n
+If you know you've been a member before, consider checking earlier seasons first to \n
+make sure we're checking your details correctly. Finally, you can contact \n
+info@villageplayers.ch if you have any questions.
+"""
 SORT_COLUMNS = ['season', 'surname']
 
 def get_member_list(role, seasons, types, persons, columns):
@@ -102,13 +108,13 @@ def get_member_check(first_name, surname, email, season):
         if name_match.shape[0]:
             person = name_match.iloc[0]
         else:
-            return "No member found"
+            return NO_MEMBER_MESSAGE
     else:
-        return "No member found"
+        return NO_MEMBER_MESSAGE
 
     member = db.members.find_one({'person': ObjectId(person['_id']), 'season': season})
 
     if member:
         return f"{person.first_name.title()} {person.surname.title()} is a {season} member"
 
-    return "No member found"
+    return NO_MEMBER_MESSAGE
