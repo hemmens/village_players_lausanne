@@ -1,7 +1,7 @@
 from current_role import current_role
 from dash import Input, Output, State, ctx
 from database import get_names_for_person_update, update_form_fill_in_value
-from people.database import insert_person, update_person
+from people.database import delete_person, insert_person, update_person
 from update_mapping import update_mapping
 
 
