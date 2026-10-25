@@ -1,3 +1,7 @@
+BANK_COST = -5
+MEMBER_COST = 95
+STORAGE_COST = -370
+STORAGE_OWNER = "Procimmo Real Estate"
 GENDERS = [
     "male",
     "female",

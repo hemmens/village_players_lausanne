@@ -45,7 +45,7 @@ def register_productions_lookup_callbacks(app, server):
         if role in {'Committee', 'Treasurer'}:
             return get_production_costs(production_id)
 
-        return no_update
+        return []
 
 
 def register_productions_insert_callbacks(app, server):
@@ -83,21 +83,21 @@ def register_productions_insert_callbacks(app, server):
             Input('a-productions-festival', 'value'),
         )
         def disable_production_field(festival):
-            return festival
+            return bool(festival)
 
         @app.callback(
             Output(f'a-productions-{field}', 'style'),
             Input('a-productions-festival', 'value'),
         )
         def greyout_production_field(festival):
-            return grey_out if festival else {}
+            return grey_out if bool(festival) else {}
 
         @app.callback(
             Output(f'a-productions-{field}', 'value' if field == 'venue' else 'date'),
             Input('a-productions-festival', 'value'),
         )
         def empty_production_field(festival):
-            return None if festival else no_update
+            return None if bool(festival) else no_update
 
     for field in ['author', 'festival']:
         @app.callback(

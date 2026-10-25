@@ -1,8 +1,11 @@
+from datetime import date, timedelta
+
 from current_role import current_role
-from dash import Input, Output, State, ctx, no_update
+from dash import Input, Output, State, no_update
 from database import get_names, get_productions
 from transactions.database import insert_transaction
 from update_mapping import grey_out, transaction_disable
+from variables import BANK_COST, MEMBER_COST, STORAGE_COST, STORAGE_OWNER
 
 
 def register_transactions_insert_callbacks(app, server):
@@ -55,39 +58,76 @@ def register_transactions_insert_callbacks(app, server):
     def update_productions(loaded):
         return get_productions(add_empty=True)
 
-    for field in [
-        'recipient', 'recipient-text', 'member-type', 'season', 'renew',
-        'new-1', 'production' # 'new-2', 'new-3', 'existing', 
-    ]:
-        @app.callback(
-            Output(f'a-transactions-{field}', 'disabled'),
-            Input('a-transactions-loaded', 'data'),
-            Input('a-transactions-type', 'value'),
-        )
-        def disable_field(loaded, t_type):
-            params = transaction_disable[field]
-            result = t_type == params[1] is params[0]
-            return not t_type or result
+    @app.callback(
+        Output('a-transactions-date', 'date'),
+        Input('a-transactions-loaded', 'data'),
+        Input('a-transactions-type', 'value'),
+    )
+    def set_date(loaded, t_type):
+        today = date.today()
+        if t_type == 'Storage':
+            return today.replace(day=1)
+        if t_type == 'Bank Charges':
+            return (today.replace(day=15) + timedelta(30)).replace(day=1) - timedelta(1)
+        return today
 
-        @app.callback(
-            Output(f'a-transactions-{field}', 'style'),
-            Input('a-transactions-loaded', 'data'),
-            Input('a-transactions-type', 'value'),
-        )
-        def greyout_field(loaded, t_type):
-            params = transaction_disable[field]
-            result = t_type == params[1] is params[0]
-            return grey_out if not t_type or result else {}
+    @app.callback(
+        Output('a-transactions-amount', 'value'),
+        Input('a-transactions-loaded', 'data'),
+        Input('a-transactions-type', 'value'),
+    )
+    def set_amount(loaded, t_type):
+        if t_type == 'Storage':
+            return STORAGE_COST
+        if t_type == 'Bank Charges':
+            return BANK_COST
+        if t_type == 'Membership Subscription':
+            return MEMBER_COST
+        return None
 
-        @app.callback(
-            Output(f'a-transactions-{field}', 'value'),
-            Input('a-transactions-loaded', 'data'),
-            Input('a-transactions-type', 'value'),
-        )
-        def empty_field(loaded, t_type):
-            params = transaction_disable[field]
-            result = t_type == params[1] is params[0]
-            return None if not t_type or result else no_update
+    @app.callback(
+        Output('a-transactions-recipient-text', 'value'),
+        Input('a-transactions-loaded', 'data'),
+        Input('a-transactions-type', 'value'),
+    )
+    def set_recipient(loaded, t_type):
+        if t_type == 'Storage':
+            return STORAGE_OWNER
+        return None
+
+    # for field in [
+    #     'recipient', 'recipient-text', 'member-type', 'season', 'renew',
+    #     'new-1', 'new-2', 'new-3', 'production' # 'existing', 
+    # ]:
+    #     @app.callback(
+    #         Output(f'a-transactions-{field}', 'disabled'),
+    #         Input('a-transactions-loaded', 'data'),
+    #         Input('a-transactions-type', 'value'),
+    #     )
+    #     def disable_field(loaded, t_type):
+    #         params = transaction_disable[field]
+    #         result = (t_type == params[1]) is params[0]
+    #         return not bool(t_type) or result
+
+    #     @app.callback(
+    #         Output(f'a-transactions-{field}', 'style'),
+    #         Input('a-transactions-loaded', 'data'),
+    #         Input('a-transactions-type', 'value'),
+    #     )
+    #     def greyout_field(loaded, t_type):
+    #         params = transaction_disable[field]
+    #         result = (t_type == params[1]) is params[0]
+    #         return grey_out if not bool(t_type) or result else {}
+
+    #     @app.callback(
+    #         Output(f'a-transactions-{field}', 'value'),
+    #         Input('a-transactions-loaded', 'data'),
+    #         Input('a-transactions-type', 'value'),
+    #     )
+    #     def empty_field(loaded, t_type):
+    #         params = transaction_disable[field]
+    #         result = (t_type == params[1]) is params[0]
+    #         return None if not bool(t_type) or result else no_update
 
     @app.callback(
         Output('a-transactions-message', 'children'),
