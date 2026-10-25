@@ -21,7 +21,8 @@ def get_committee_list(role, seasons):
     committee.set_index('_id', inplace=True)
     people = pd.DataFrame(db.people.find()).set_index('_id')
     committee = committee.join(people, 'holder')
-    committee = committee[['season', 'position', 'first_name', 'surname', 'committee_email']]
+    committee['full_name'] = committee.apply(lambda row: f"{row.first_name} {row.surname}", axis=1)
+    committee = committee[['season', 'position', 'full_name', 'committee_email']]
     committee['committee_email'] = committee['committee_email'].fillna('')
     committee.position = committee.position.apply(lambda x: x.title())
     committee.sort_values('season', inplace=True)

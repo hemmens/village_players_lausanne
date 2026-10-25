@@ -72,7 +72,7 @@ def set_debug_role():
     if role not in {"Public", "Committee", "Treasurer"}:
         role = "Awaiting Connection"
 
-    session["debug_role"] = role
+    session["role"] = role
 
     return redirect(url_for("index"))
 
