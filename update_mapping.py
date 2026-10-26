@@ -37,16 +37,3 @@ update_mapping = {
         'entry_lambda': lambda x: x['date'].strftime("%B %Y")
     },
 }
-
-transaction_disable = {
-    'recipient': (True, 'Membership Subscription'),
-    'recipient-text': (True, 'Membership Subscription'),
-    'member-type': (False, 'Membership Subscription'),
-    'season': (False, 'Membership Subscription'),
-    'renew': (False, 'Membership Subscription'),
-    'new-1': (False, 'Membership Subscription'),
-    'new-2': (False, 'Membership Subscription'),
-    'new-3': (False, 'Membership Subscription'),
-    'existing': (False, 'Membership Subscription'),
-    'production': (False, 'Production'),
-}

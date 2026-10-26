@@ -157,7 +157,7 @@ def insert_bank_charge(date, amount):
 
 
 def insert_transaction(t_type, date, amount, description, recipient, recipient_text,
-                        m_type, season, renew, new_1, production_id): # new_2, new_3, existing, 
+                        m_type, season, renew, new_1, new_2, new_3, existing, production_id):
     if not t_type or not date or not amount:
         return "Type, Date, and Amount are required."
 
