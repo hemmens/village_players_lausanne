@@ -2,7 +2,7 @@ from datetime import date, timedelta
 
 from current_role import current_role
 from dash import Input, Output, State, no_update
-from database import get_names, get_productions
+from database import get_members, get_names, get_productions
 from transactions.database import insert_transaction
 from update_mapping import grey_out
 from variables import BANK_COST, MEMBER_COST, STORAGE_COST, STORAGE_OWNER
@@ -35,7 +35,7 @@ def register_transactions_insert_callbacks(app, server):
         Input('a-transactions-loaded', 'data'),
     )
     def update_recipient(loaded):
-        return get_names(add_empty=True)
+        return get_names(add_empty=True) + get_productions()
 
     @app.callback(
         Output('a-transactions-renew', 'options'),
@@ -49,7 +49,7 @@ def register_transactions_insert_callbacks(app, server):
         Input('a-transactions-loaded', 'data'),
     )
     def update_existing_member(loaded):
-        return get_names(add_empty=True)
+        return get_members(add_empty=True)
 
     @app.callback(
         Output('a-transactions-production', 'options'),

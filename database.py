@@ -234,6 +234,31 @@ def get_castcrew():
     )
 
 
+def get_members(add_empty=False):
+    if not has_request_context():
+        return []
+
+    db = get_database(session["db_session_id"])
+
+    members = pd.DataFrame(db.members.find({}))
+    people = pd.DataFrame(db.people.find({})).set_index('_id')
+    members = members.join(people, 'person')
+    members.sort_values(
+        ['season', 'surname', 'first_name'], ascending=[False, True, True], inplace=True
+    )
+    members['member_label'] = members.apply(
+        lambda row:{
+            'label': f"{row['first_name']} {row['surname']} / {row['season']} / {row['type']}",
+            'value': str(row['_id'])
+        }, axis=1
+    )
+
+    member_list = members.member_label.to_list()
+    if add_empty:
+        member_list = [''] + member_list
+    return member_list
+
+
 def update_form_fill_in_value(collection, field, document_id):
     db = get_database(session["db_session_id"])
     if not has_request_context():
