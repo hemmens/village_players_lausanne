@@ -55,7 +55,7 @@ def insert_member(date, amount, mbr_type, season, mbr_renew,
                 person_payload['email_private'] = True
                 new_person = db.people.insert_one(person_payload)
                 if bool(new_person):
-                    person_ids.append(new_person['_id'])
+                    person_ids.append(new_person.inserted_id)
                     message += f"; New person inserted: {name['full_name']}"
                 else:
                     return f"New person {name['full_name']} could not be found or created"
