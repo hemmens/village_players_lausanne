@@ -7,12 +7,6 @@ from flask import has_request_context, session
 from database import get_database
 from variables import MEMBER_LIST_COLUMNS
 
-NO_MEMBER_MESSAGE = """
-No member found. Email checks are more reliable, if you haven't tried that already. \n
-If you know you've been a member before, consider checking earlier seasons first to \n
-make sure we're checking your details correctly. Finally, you can contact \n
-info@villageplayers.ch if you have any questions.
-"""
 SORT_COLUMNS = ['season', 'surname']
 
 def get_member_list(role, seasons, types, persons, columns):
@@ -112,10 +106,9 @@ def get_member_check(first_name, surname, email, season):
         if members.shape[0] == 0:
             return "No members with this email address were found"
 
-        members = members[['full_name', 'email', 'ratio']]
-        members.drop_duplicates(inplace=True)
+        member_dups = set(members.full_name.to_list())
 
-        if members.shape[0] >= 2:
+        if len(member_dups) >= 2:
             return """
                     Multiple members found with the same email address.
                     Please contact info@villageplayers.ch.
