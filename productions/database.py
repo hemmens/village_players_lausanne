@@ -4,6 +4,7 @@ from bson.objectid import ObjectId
 from flask import has_request_context, session
 
 from database import convert_date, find_collection_link, get_database
+from variables import ROLE_TYPES
 
 def get_production_details(production_id):
     if not production_id:
@@ -51,16 +52,24 @@ def get_production_details(production_id):
     if festival_name is not None:
         row_data.append({'detail': 'Festival', 'info': festival_name})
 
-    castcrew = db.castcrew.find({'production': ObjectId(production_id)})
-    for participant in castcrew:
-        character = participant.get('role_name')
-        person = db.people.find_one({'_id': participant['person']})
-        row_data.append(
-            {
-                'detail': participant['role'] if not character else character,
-                'info': f"{person['first_name']} {person['surname']}",
-            }
-        )
+    castcrew = pd.DataFrame(db.castcrew.find({'production': ObjectId(production_id)}))
+    if castcrew.shape[0]:
+        castcrew.role = castcrew.role.astype('category')
+        castcrew.role = castcrew.role.cat.set_categories(ROLE_TYPES)
+        castcrew.sort_values('role', inplace=True)
+        for _, participant in castcrew.iterrows():
+            role = (
+                participant.role
+                if 'role_name' not in castcrew.columns or pd.isna(participant.role_name)
+                else participant.role_name
+            )
+            person = db.people.find_one({'_id': participant['person']})
+            row_data.append(
+                {
+                    'detail': role,
+                    'info': f"{person['first_name']} {person['surname']}",
+                }
+            )
 
     return pd.DataFrame(row_data).to_dict('records')
 

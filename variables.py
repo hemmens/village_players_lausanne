@@ -37,8 +37,8 @@ MEMBER_TYPES = [
     "Mar-May",    
 ]
 ROLE_TYPES = [
-    'Cast',
     'Director',
+    'Cast',
     'Stage Manager',
     'Lights',
     'Sound',
