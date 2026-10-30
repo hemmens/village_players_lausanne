@@ -1,4 +1,5 @@
 import pandas as pd
+from Levenshtein import ratio
 
 from bson.objectid import ObjectId
 from flask import has_request_context, session
@@ -6,12 +7,6 @@ from flask import has_request_context, session
 from database import get_database
 from variables import MEMBER_LIST_COLUMNS
 
-NO_MEMBER_MESSAGE = """
-No member found. Email checks are more reliable, if you haven't tried that already. \n
-If you know you've been a member before, consider checking earlier seasons first to \n
-make sure we're checking your details correctly. Finally, you can contact \n
-info@villageplayers.ch if you have any questions.
-"""
 SORT_COLUMNS = ['season', 'surname']
 
 def get_member_list(role, seasons, types, persons, columns):
@@ -85,36 +80,47 @@ def get_member_check(first_name, surname, email, season):
     if not season:
         return "Season is required"
 
-    if not email and not (first_name and surname):
-        return "Please provide either an email or both names"
+    if not first_name or not surname:
+        return "Please provide both names"
 
     db = get_database(session["db_session_id"])
 
-    people = pd.DataFrame(db.people.find({}))
-    email_match = people[people.email.apply(lambda x: x == email)] if email else pd.DataFrame()
+    people = pd.DataFrame(db.people.find({})).set_index('_id')
+    members = pd.DataFrame(db.members.find({'season': season}))
+    members = members.join(people, 'person')
+    if members.shape[0] == 0:
+        return "Error retrieving database information"
 
-    if email_match.shape[0]:
-        person = email_match.iloc[0]
-    elif first_name and surname:
-        name_match = people[
-            people.apply(
-                lambda row: (
-                    row.first_name.strip().lower() == first_name.strip().lower()
-                ) and (
-                    row.surname.strip().lower() == surname.strip().lower()
-                ),
-            axis=1)
-        ]
-        if name_match.shape[0]:
-            person = name_match.iloc[0]
+    members['full_name'] = members.apply(
+        lambda row: (f"{row.first_name} {row.surname}").strip().lower(), axis=1
+    )
+    check_name = (f"{first_name} {surname}").strip().lower()
+    members['ratio'] = members.full_name.apply(lambda x: ratio(x, check_name))
+    members.sort_values('ratio', ascending=False, inplace=True)
+    member = members.iloc[0]
+    if member.ratio >= 0.8:
+        return f"{member.full_name.title()} is a {season} member"
+
+    if email:
+        members = members[members.email == email]
+        if members.shape[0] == 0:
+            return "No members with this email address were found"
+
+        member_dups = set(members.full_name.to_list())
+
+        if len(member_dups) >= 2:
+            return """
+                    Multiple members found with the same email address.
+                    Please contact info@villageplayers.ch.
+                """
+
+        member = members.iloc[0]
+        if member.ratio >= 0.5:
+            return f"{member.full_name.title()} is a {season} member"
         else:
-            return NO_MEMBER_MESSAGE
-    else:
-        return NO_MEMBER_MESSAGE
+            return """
+                    This email matches a member but the provided name does not.
+                    Please contact info@villageplayers.ch.
+                """
 
-    member = db.members.find_one({'person': ObjectId(person['_id']), 'season': season})
-
-    if member:
-        return f"{person.first_name.title()} {person.surname.title()} is a {season} member"
-
-    return NO_MEMBER_MESSAGE
+    return "Please provide an email address for additional verification"

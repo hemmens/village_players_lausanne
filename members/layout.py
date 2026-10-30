@@ -6,9 +6,9 @@ from variables import MEMBER_LIST_COLUMNS, MEMBER_TYPES, SEASONS
 mcols = list(MEMBER_LIST_COLUMNS.keys())
 
 members_search_layout = [
-    html.Label("First Name: "),
+    html.Label("First Name (required): "),
     dcc.Input(id='s-member-first-name', type='text'),
-    html.Label("Surname: "),
+    html.Label("Surname (required): "),
     dcc.Input(id='s-member-surname', type='text'),
     html.Label("Email: "),
     dcc.Input(id='s-member-email', type='text'),
