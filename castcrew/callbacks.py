@@ -49,10 +49,11 @@ def register_castcrew_insert_callbacks(app, server):
         State('a-castcrew-production', 'value'),
         State('a-castcrew-position', 'value'),
         State('a-castcrew-role-name', 'value'),
+        State('a-castcrew-list-rank', 'value'),
         prevent_initial_call=True
     )
-    def new_castcrew(n_clicks, person_id, production_id, role, role_name):
-        return insert_castcrew(person_id, production_id, role, role_name)
+    def new_castcrew(n_clicks, person_id, production_id, role, role_name, list_rank):
+        return insert_castcrew(person_id, production_id, role, role_name, list_rank)
 
 
 def register_castcrew_update_callbacks(app, server):
@@ -99,11 +100,12 @@ def register_castcrew_update_callbacks(app, server):
         Input('u-castcrew-delete', 'n_clicks'),
         State('u-castcrew-select', 'value'),
         State('u-castcrew-role-name', 'value'),
+        State('u-castcrew-list-rank', 'value'),
         prevent_initial_call=True
     )
-    def change_castcrew_details(u_clicks, d_clicks, role_id, name):
+    def change_castcrew_details(u_clicks, d_clicks, role_id, name, list_rank):
         if ctx.triggered_id == "u-castcrew-update":
-            return update_castcrew(role_id, name)
+            return update_castcrew(role_id, name, list_rank)
 
         if ctx.triggered_id == "u-castcrew-delete":
             return delete_castcrew(role_id)

@@ -1,6 +1,8 @@
-from dash import Input, Output, State
+from dash import Input, Output, State, ctx
 
-from committee.database import get_committee_list, insert_committee_member, delete_committee_member
+from committee.database import (
+    delete_committee_member, get_committee_list, insert_committee_member, update_committee_member
+)
 from current_role import current_role
 from database import get_committee_positions, get_names
 
@@ -63,11 +65,12 @@ def register_committee_insert_callbacks(app, server):
         State('a-committee-person', 'value'),
         State('a-committee-season', 'value'),
         State('a-committee-position', 'value'),
+        State('a-committee-list-rank', 'value'),
         prevent_initial_call=True
     )
-    def new_committee_member(n_clicks, person, season, position):
+    def new_committee_member(n_clicks, person, season, position, list_rank):
         person_id = person.split('|')[0] if person else None
-        return insert_committee_member(person_id, season, position)
+        return insert_committee_member(person_id, season, position, list_rank)
 
 
 def register_committee_update_callbacks(app, server):
@@ -101,9 +104,15 @@ def register_committee_update_callbacks(app, server):
 
     @app.callback(
         Output('u-committee-message', 'children'),
+        Input('u-committee-update', 'n_clicks'),
         Input('u-committee-delete', 'n_clicks'),
         State('u-committee-position', 'value'),
+        State('u-committee-list-rank', 'value'),
         prevent_initial_call=True
     )
-    def remove_committee_member(n_clicks, position):
-        return delete_committee_member(position)
+    def change_committee_member(u_clicks, d_clicks, position, list_rank):
+        if ctx.triggered_id == "u-committee-update":
+            return update_committee_member(position, list_rank)
+
+        if ctx.triggered_id == "u-committee-delete":
+            return delete_committee_member(position)

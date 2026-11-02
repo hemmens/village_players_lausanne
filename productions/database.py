@@ -56,7 +56,9 @@ def get_production_details(production_id):
     if castcrew.shape[0]:
         castcrew.role = castcrew.role.astype('category')
         castcrew.role = castcrew.role.cat.set_categories(ROLE_TYPES)
-        castcrew.sort_values('role', inplace=True)
+        if 'list_rank' not in castcrew.columns:
+            castcrew['list_rank'] = 0
+        castcrew.sort_values(['role', 'list_rank'], inplace=True)
         for _, participant in castcrew.iterrows():
             role = (
                 participant.role
