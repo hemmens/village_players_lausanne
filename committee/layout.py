@@ -50,7 +50,7 @@ committee_insert_layout = [
             html.Label("Select Person: "),
             dcc.Dropdown(id='a-committee-person', options=[]),
             html.Label("Select Season: "),
-            dcc.Dropdown(id='a-committee-season', options=SEASONS),
+            dcc.Dropdown(id='a-committee-season', options=SEASONS, value=SEASONS[0]),
             html.Label("Position: "),
             dcc.Input(id='a-committee-position', type='text'),
             html.Label("List Rank: "),
@@ -83,6 +83,8 @@ committee_update_layout = [
     ),
     html.Div(
         [
+            html.Label("Select Season: "),
+            dcc.Dropdown(id='u-committee-season', options=SEASONS, value=SEASONS[0]),
             html.Label("Select Committee Position: "),
             dcc.Dropdown(id='u-committee-position', options=[]),
             html.Label("List Rank: "),

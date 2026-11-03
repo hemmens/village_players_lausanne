@@ -48,6 +48,8 @@ castcrew_update_layout = [
     ),
     html.Div(
         [
+            html.Label("Select Production: "),
+            dcc.Dropdown(id='u-castcrew-production', options=[]),
             html.Label("Select Cast or Crew to update: "),
             dcc.Dropdown(id='u-castcrew-select', options=[], placeholder="Select a role"),
             html.Label("Character: "),

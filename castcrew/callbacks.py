@@ -1,8 +1,8 @@
 from dash import Input, Output, State, ctx
 
-from castcrew.database import delete_castcrew, insert_castcrew, update_castcrew
+from castcrew.database import delete_castcrew, get_castcrew, insert_castcrew, update_castcrew
 from current_role import current_role
-from database import get_names, get_castcrew, get_productions, update_form_fill_in_value
+from database import get_names, get_productions, update_form_fill_in_value
 from update_mapping import update_mapping
 
 
@@ -79,11 +79,26 @@ def register_castcrew_update_callbacks(app, server):
         return role in {"Committee", "Treasurer"}
 
     @app.callback(
-        Output('u-castcrew-select', 'options'),
+        Output('u-castcrew-production', 'options'),
         Input('u-castcrew-loaded', 'data'),
     )
-    def update_castcrew_list(loaded):
-        return get_castcrew()
+    def update_production_list(loaded):
+        return get_productions()
+
+    @app.callback(
+        Output('u-castcrew-production', 'value'),
+        Input('u-castcrew-loaded', 'data'),
+    )
+    def update_production_list(loaded):
+        return get_productions()[0] if get_productions() else None
+
+    @app.callback(
+        Output('u-castcrew-select', 'options'),
+        Input('u-castcrew-loaded', 'data'),
+        Input('u-castcrew-production', 'value'),
+    )
+    def update_castcrew_list(loaded, production_id):
+        return get_castcrew(production_id) if production_id else []
 
     for datatype in ['value', 'date']:
         for field in update_mapping['castcrew'][datatype].keys():

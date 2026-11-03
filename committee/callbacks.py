@@ -1,10 +1,12 @@
 from dash import Input, Output, State, ctx
 
 from committee.database import (
-    delete_committee_member, get_committee_list, insert_committee_member, update_committee_member
+    delete_committee_member, get_committee_list, get_committee_positions,
+    insert_committee_member, update_committee_member
 )
 from current_role import current_role
-from database import get_committee_positions, get_names
+from database import get_names, update_form_fill_in_value
+from update_mapping import update_mapping
 
 def register_committee_lookup_callbacks(app, server):
     @app.callback(
@@ -98,9 +100,19 @@ def register_committee_update_callbacks(app, server):
     @app.callback(
         Output('u-committee-position', 'options'),
         Input('u-committee-loaded', 'data'),
+        Input('u-committee-season', 'value'),
     )
-    def update_names(loaded):
-        return get_committee_positions()
+    def update_names(loaded, season):
+        return get_committee_positions(season)
+
+    for datatype in ['value', 'date']:
+        for field in update_mapping['committee'][datatype].keys():
+            @app.callback(
+                Output(f'u-committee-{field}', datatype),
+                Input('u-committee-position', 'value'),
+            )
+            def update_field_value(selected_id, field=field):
+                return update_form_fill_in_value('committee', field, selected_id)
 
     @app.callback(
         Output('u-committee-message', 'children'),

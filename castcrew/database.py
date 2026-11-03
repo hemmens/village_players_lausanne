@@ -1,7 +1,33 @@
+import pandas as pd
+
 from bson.objectid import ObjectId
 from flask import has_request_context, session
 
 from database import get_database
+from variables import ROLE_TYPES
+
+
+def get_castcrew(production_id):
+    if not has_request_context():
+        return []
+
+    db = get_database(session["db_session_id"])
+    castcrew = pd.DataFrame(db.castcrew.find({'production': ObjectId(production_id)}))
+    people = pd.DataFrame(db.people.find({})).set_index('_id')
+    castcrew = castcrew.join(people, 'person')
+    castcrew['role'] = castcrew.role.astype('category')
+    castcrew['role'] = castcrew.role.cat.set_categories(ROLE_TYPES)
+    if 'list_rank' not in castcrew.columns:
+        castcrew['list_rank'] = 0
+    castcrew.sort_values(['role', 'list_rank'], inplace=True)
+
+    return castcrew.apply(
+        lambda row: {
+            'label': f"{row['role']} / {row['first_name']} {row['surname']}",
+            'value': str(row['_id']),
+        }, axis=1
+    ).to_list()
+
 
 def insert_castcrew(person_id, production_id, role, name, list_rank):
     if not has_request_context():

@@ -5,6 +5,25 @@ from flask import has_request_context, session
 
 from database import get_database
 
+
+def get_committee_positions(season):
+    if not has_request_context():
+        return []
+
+    db = get_database(session["db_session_id"])
+
+    positions = list(
+        {
+            'label': (
+                f"{entry['position'].title()} / {db.people.find_one({'_id': entry['holder']})['surname']}"
+            ),
+            'value': str(entry['_id']),
+        }
+        for entry in db.committee.find({'season': season})
+    )
+    return positions
+
+
 def get_committee_list(role, seasons):
     if not has_request_context() or role not in {"Committee", "Treasurer", "Public"}:
         return pd.DataFrame().to_dict('records')
