@@ -1,7 +1,110 @@
+import pandas as pd
+from datetime import date
+
 from bson.objectid import ObjectId
 from flask import session
 
 from database import convert_date, extract_name, get_database, get_new_ref, handle_decimal
+
+
+def get_recipients():
+    db = get_database(session["db_session_id"])
+    transactions = pd.DataFrame(db.transactions.find())
+    people = pd.DataFrame(db.people.find()).set_index('_id')
+    productions = pd.DataFrame(db.productions.find()).set_index('_id')
+    festivals = pd.DataFrame(db.festivals.find()).set_index('_id')
+
+    transactions = transactions.join(people, 'Recipient')
+    transactions = transactions.join(productions, 'Recipient')
+    transactions = transactions.join(festivals, 'Recipient', rsuffix='_festival')
+
+    transactions['label'] = transactions.apply(
+        lambda row: (
+            f"{row['first_name']} {row['surname']}"
+            if pd.notnull(row['first_name']) and pd.notnull(row['surname'])
+            else (
+                row['title']
+                if pd.notnull(row['title'])
+                else (
+                    row['title_festival']
+                    if pd.notnull(row['title_festival'])
+                    else row['Recipient']
+                )
+            )
+        ), axis=1
+    )
+    transactions['value'] = transactions.Recipient.astype(str)
+    transactions = transactions[['label', 'value']].drop_duplicates()
+    transactions.sort_values('label', inplace=True)
+    return transactions.apply(lambda row: {'label': row['label'], 'value': row['value']}, axis=1).to_list()
+
+
+def get_transactions(t_type, start_date, end_date, recipient, production):
+    transaction_filter = {}
+    
+    if t_type:
+        transaction_filter['Type'] = t_type
+    if start_date:
+        transaction_filter['Date'] = {'$gte': convert_date(start_date)}
+    if end_date:
+        transaction_filter['Date'] = transaction_filter.get('Date', {})
+        transaction_filter['Date']['$lte'] = convert_date(end_date)
+    if recipient:
+        try:
+            recipient = ObjectId(recipient)
+        except Exception:
+            pass
+        transaction_filter['Recipient'] = recipient
+    if production:
+        transaction_filter['Production'] = ObjectId(production)
+
+    db = get_database(session["db_session_id"])
+    transactions = pd.DataFrame(db.transactions.find(transaction_filter))
+    transactions.Amount = transactions.Amount.astype(str)
+    transactions.Amount = transactions.Amount.astype(float)
+    transactions.Date = transactions.Date.apply(lambda d: d.strftime("%d %B %Y"))
+
+    people = pd.DataFrame(db.people.find()).set_index('_id')
+    productions = pd.DataFrame(db.productions.find()).set_index('_id')
+    festivals = pd.DataFrame(db.festivals.find()).set_index('_id')
+    transactions = transactions.join(people, 'Recipient')
+    transactions = transactions.join(productions, 'Recipient')
+    transactions = transactions.join(festivals, 'Recipient', rsuffix='_festival')
+    transactions['Recipient'] = transactions.apply(
+        lambda row: (
+            f"{row['first_name']} {row['surname']}"
+            if pd.notnull(row['first_name']) and pd.notnull(row['surname'])
+            else (
+                row['title']
+                if pd.notnull(row['title'])
+                else (
+                    row['title_festival']
+                    if pd.notnull(row['title_festival'])
+                    else row['Recipient']
+                )
+            )
+        ), axis=1
+    )
+
+    transactions = transactions[['Type', 'Reference', 'Date', 'Amount', 'Description', 'Recipient', 'Production']]
+    transactions = transactions.join(productions, 'Production')
+    transactions = transactions.join(festivals, 'Production', rsuffix='_festival')
+    transactions['Production'] = transactions.apply(
+        lambda row: (
+            row['title']
+            if pd.notnull(row['title'])
+            else (
+                row['title_festival']
+                if pd.notnull(row['title_festival'])
+                else row['Production']
+            )
+        ), axis=1
+    )
+
+    transactions = transactions[['Type', 'Reference', 'Date', 'Amount', 'Description', 'Recipient', 'Production']]
+    transactions.sort_values('Reference', ascending=False, inplace=True)
+    return transactions.to_dict('records')
+
 
 def insert_member(date, amount, mbr_type, season, mbr_renew,
             mbr_new_1, mbr_new_2, mbr_new_3, mbr_existing):
@@ -133,7 +236,7 @@ def insert_storage(date, amount, recipient_text):
         'Date': convert_date(date),
         'Amount': handle_decimal(amount),
         'Type': 'Storage',
-        'Description': recipient_text,
+        'Recipient': recipient_text,
     }
 
     db.transactions.insert_one(transaction_payload)

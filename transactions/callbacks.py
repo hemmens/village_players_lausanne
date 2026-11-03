@@ -3,9 +3,61 @@ from datetime import date, timedelta
 from current_role import current_role
 from dash import Input, Output, State, no_update
 from database import get_members, get_names, get_productions
-from transactions.database import insert_transaction
+from transactions.database import get_recipients, get_transactions, insert_transaction
 from update_mapping import grey_out
 from variables import BANK_COST, MEMBER_COST, STORAGE_COST, STORAGE_OWNER
+
+
+def register_transactions_lookup_callbacks(app, server):
+    @app.callback(
+        Output('f-transactions-role', 'data'),
+        Input('f-transactions-loaded', 'data'),
+    )
+    def update_role(loaded):
+        return current_role(server)
+    
+    @app.callback(
+        Output('f-transactions-access', 'hidden'),
+        Input('f-transactions-role', 'data'),
+    )
+    def update_access_hidden(role):
+        return role not in {"Committee", "Treasurer"}
+    
+    @app.callback(
+        Output('f-transactions-no-access', 'hidden'),
+        Input('f-transactions-role', 'data'),
+    )
+    def update_no_access_hidden(role):
+        return role in {"Committee", "Treasurer"}
+
+    @app.callback(
+        Output('f-transactions-recipient', 'options'),
+        Input('f-transactions-loaded', 'data'),
+    )
+    def update_recipients(loaded):
+        return get_recipients()
+
+    @app.callback(
+        Output('f-transactions-production', 'options'),
+        Input('f-transactions-loaded', 'data'),
+    )
+    def update_productions(loaded):
+        return get_productions(add_empty=True)
+
+    @app.callback(
+        Output('f-transactions-list', 'rowData'),
+        Input('f-transactions-type', 'value'),
+        Input('f-transactions-start-date', 'date'),
+        Input('f-transactions-end-date', 'date'),
+        Input('f-transactions-recipient', 'value'),
+        Input('f-transactions-production', 'value'),
+        State('f-transactions-role', 'data')
+    )
+    def update_row_data_transactions(t_type, start_date, end_date, recipient, production, role):
+        if role in {'Committee', 'Treasurer'}:
+            return get_transactions(t_type, start_date, end_date, recipient, production)
+
+        return []
 
 
 def register_transactions_insert_callbacks(app, server):

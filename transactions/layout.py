@@ -1,6 +1,54 @@
 from dash import html, dcc
+import dash_ag_grid as dag
 
 from variables import MEMBER_TYPES, SEASONS, TRANSACTION_TYPES
+
+transactions_lookup_layout = [
+    dcc.Store(id='f-transactions-loaded', data=True),
+    dcc.Store(id='f-transactions-role', storage_type='session'),
+    html.H1('Village Players Database Interface'),
+    html.H2('Transactions'),
+    html.Div(
+        "Committee access only", id='f-transactions-no-access', hidden=False
+    ),
+    html.Div(
+        [
+            html.Label("Transaction Type: "),
+            dcc.Dropdown(id='f-transactions-type', multi=True, options=TRANSACTION_TYPES),
+            html.Label("Start Date: "),
+            dcc.DatePickerSingle(id='f-transactions-start-date'),
+            html.Label("End Date: "),
+            dcc.DatePickerSingle(id='f-transactions-end-date'),
+            html.Label("Recipient: "),
+            dcc.Dropdown(id='f-transactions-recipient', multi=True, options=[]),
+            html.Label("Production: "),
+            dcc.Dropdown(id='f-transactions-production', multi=True, options=[]),
+            dag.AgGrid(
+                id='f-transactions-list',
+                columnDefs=[
+                    {'field': 'Type'},
+                    {'field': 'Reference'},
+                    {'field': 'Date'},
+                    {'field': 'Amount'},
+                    {'field': 'Description'},
+                    {'field': 'Recipient'},
+                    {'field': 'Production'},
+                ]
+            ),
+            html.A(
+                html.Button("Insert", id='f-transactions-insert'), href='/transactions/insert/'
+            ),
+            # html.A(
+            #     html.Button("Update", id='f-transactions-update'), href='/transactions/update/'
+            # ),
+        ],
+        id='f-transactions-access',
+        hidden=True
+    ),
+    html.A(
+        html.Button("Home", id='f-transactions-home'), href='/'
+    ),
+]
 
 transactions_insert_layout = [
     dcc.Store(id='a-transactions-loaded', data=True),
@@ -42,6 +90,9 @@ transactions_insert_layout = [
             dcc.Dropdown(id='a-transactions-production', options=[]),
             html.Div(id='a-transactions-message'),
             html.Button("Insert New Transaction", id='a-transactions-insert'),
+            html.A(
+                html.Button("Lookup", id='f-transactions-lookup'), href='/transactions/lookup/'
+            ),
             # html.A(
             #     html.Button("Update", id='a-transactions-update'), href='/transactions/update/'
             # ),
