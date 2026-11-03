@@ -1,8 +1,8 @@
 from dash import Input, Output, State, ctx
 
-from castcrew.database import delete_castcrew, insert_castcrew, update_castcrew
+from castcrew.database import delete_castcrew, get_castcrew, insert_castcrew, update_castcrew
 from current_role import current_role
-from database import get_names, get_castcrew, get_productions, update_form_fill_in_value
+from database import get_names, get_productions, update_form_fill_in_value
 from update_mapping import update_mapping
 
 
@@ -49,10 +49,11 @@ def register_castcrew_insert_callbacks(app, server):
         State('a-castcrew-production', 'value'),
         State('a-castcrew-position', 'value'),
         State('a-castcrew-role-name', 'value'),
+        State('a-castcrew-list-rank', 'value'),
         prevent_initial_call=True
     )
-    def new_castcrew(n_clicks, person_id, production_id, role, role_name):
-        return insert_castcrew(person_id, production_id, role, role_name)
+    def new_castcrew(n_clicks, person_id, production_id, role, role_name, list_rank):
+        return insert_castcrew(person_id, production_id, role, role_name, list_rank)
 
 
 def register_castcrew_update_callbacks(app, server):
@@ -78,11 +79,26 @@ def register_castcrew_update_callbacks(app, server):
         return role in {"Committee", "Treasurer"}
 
     @app.callback(
-        Output('u-castcrew-select', 'options'),
+        Output('u-castcrew-production', 'options'),
         Input('u-castcrew-loaded', 'data'),
     )
-    def update_castcrew_list(loaded):
-        return get_castcrew()
+    def update_production_list(loaded):
+        return get_productions()
+
+    @app.callback(
+        Output('u-castcrew-production', 'value'),
+        Input('u-castcrew-loaded', 'data'),
+    )
+    def update_production_list(loaded):
+        return get_productions()[0] if get_productions() else None
+
+    @app.callback(
+        Output('u-castcrew-select', 'options'),
+        Input('u-castcrew-loaded', 'data'),
+        Input('u-castcrew-production', 'value'),
+    )
+    def update_castcrew_list(loaded, production_id):
+        return get_castcrew(production_id) if production_id else []
 
     for datatype in ['value', 'date']:
         for field in update_mapping['castcrew'][datatype].keys():
@@ -99,11 +115,12 @@ def register_castcrew_update_callbacks(app, server):
         Input('u-castcrew-delete', 'n_clicks'),
         State('u-castcrew-select', 'value'),
         State('u-castcrew-role-name', 'value'),
+        State('u-castcrew-list-rank', 'value'),
         prevent_initial_call=True
     )
-    def change_castcrew_details(u_clicks, d_clicks, role_id, name):
+    def change_castcrew_details(u_clicks, d_clicks, role_id, name, list_rank):
         if ctx.triggered_id == "u-castcrew-update":
-            return update_castcrew(role_id, name)
+            return update_castcrew(role_id, name, list_rank)
 
         if ctx.triggered_id == "u-castcrew-delete":
             return delete_castcrew(role_id)

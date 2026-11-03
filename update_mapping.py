@@ -10,7 +10,7 @@ update_mapping = {
         'date': {'open': 'open_date', 'close': 'close_date'},
     },
     'castcrew': {
-        'value': {'role-name': 'role_name'},
+        'value': {'role-name': 'role_name', 'list-rank': 'list_rank'},
         'date': {},
     },
     'festivals': {
@@ -28,12 +28,11 @@ update_mapping = {
         'date': {'gdpr': 'gdpr'},
     },
     'committee': {
-        'value': {},
+        'value': {'list-rank': 'list_rank'},
         'date': {},
     },
     'balance': {
         'value': {'amount': 'balance'},
         'date': [],
-        'entry_lambda': lambda x: x['date'].strftime("%B %Y")
     },
 }

@@ -1,9 +1,35 @@
+import pandas as pd
+
 from bson.objectid import ObjectId
 from flask import has_request_context, session
 
 from database import get_database
+from variables import ROLE_TYPES
 
-def insert_castcrew(person_id, production_id, role, name):
+
+def get_castcrew(production_id):
+    if not has_request_context():
+        return []
+
+    db = get_database(session["db_session_id"])
+    castcrew = pd.DataFrame(db.castcrew.find({'production': ObjectId(production_id)}))
+    people = pd.DataFrame(db.people.find({})).set_index('_id')
+    castcrew = castcrew.join(people, 'person')
+    castcrew['role'] = castcrew.role.astype('category')
+    castcrew['role'] = castcrew.role.cat.set_categories(ROLE_TYPES)
+    if 'list_rank' not in castcrew.columns:
+        castcrew['list_rank'] = 0
+    castcrew.sort_values(['role', 'list_rank'], inplace=True)
+
+    return castcrew.apply(
+        lambda row: {
+            'label': f"{row['role']} / {row['first_name']} {row['surname']}",
+            'value': str(row['_id']),
+        }, axis=1
+    ).to_list()
+
+
+def insert_castcrew(person_id, production_id, role, name, list_rank):
     if not has_request_context():
         return ""
 
@@ -15,8 +41,11 @@ def insert_castcrew(person_id, production_id, role, name):
     cast_crew_payload = {
         'person': ObjectId(person_id.split('|')[0]),
         'production': ObjectId(production_id),
-        'role': role
+        'role': role,
     }
+
+    if list_rank:
+        cast_crew_payload['list_rank'] = int(list_rank)
 
     if db.castcrew.find_one(cast_crew_payload):
         return "Cast or Crew Member already exists"
@@ -29,7 +58,7 @@ def insert_castcrew(person_id, production_id, role, name):
     return f"New Cast or Crew Member: {str(new_castcrew.inserted_id)}"
 
 
-def update_castcrew(castcrew_id, name):
+def update_castcrew(castcrew_id, name, list_rank):
     if not has_request_context():
         return ""
 
@@ -52,6 +81,11 @@ def update_castcrew(castcrew_id, name):
         update_payload['$set']['role_name'] = name
     else:
         update_payload['$unset']['role_name'] = ""
+
+    if list_rank:
+        update_payload['$set']['list_rank'] = int(list_rank)
+    else:
+        update_payload['$unset']['list_rank'] = ""
 
     result = db.castcrew.update_one({'_id': castcrew_id}, update_payload)
     if result.modified_count == 0:

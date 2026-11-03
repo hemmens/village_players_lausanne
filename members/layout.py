@@ -11,7 +11,7 @@ members_search_layout = [
     html.Label("Surname (required): "),
     dcc.Input(id='s-member-surname', type='text'),
     html.Label("Email: "),
-    dcc.Input(id='s-member-email', type='text'),
+    dcc.Input(id='s-member-email', type='email'),
     html.Label("Season: "),
     dcc.Dropdown(id='s-member-season', options=SEASONS, value=SEASONS[0]),
     html.Div(id='s-member-message'),

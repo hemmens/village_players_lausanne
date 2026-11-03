@@ -50,9 +50,11 @@ committee_insert_layout = [
             html.Label("Select Person: "),
             dcc.Dropdown(id='a-committee-person', options=[]),
             html.Label("Select Season: "),
-            dcc.Dropdown(id='a-committee-season', options=SEASONS),
+            dcc.Dropdown(id='a-committee-season', options=SEASONS, value=SEASONS[0]),
             html.Label("Position: "),
             dcc.Input(id='a-committee-position', type='text'),
+            html.Label("List Rank: "),
+            dcc.Input(id='a-committee-list-rank', type='number'),
             html.Div(id='a-committee-message'),
             html.Button("Insert New Committee Member", id='a-committee-insert'),
             html.A(
@@ -81,9 +83,14 @@ committee_update_layout = [
     ),
     html.Div(
         [
+            html.Label("Select Season: "),
+            dcc.Dropdown(id='u-committee-season', options=SEASONS, value=SEASONS[0]),
             html.Label("Select Committee Position: "),
             dcc.Dropdown(id='u-committee-position', options=[]),
+            html.Label("List Rank: "),
+            dcc.Input(id='u-committee-list-rank', type='number'),
             html.Div(id='u-committee-message'),
+            html.Button("Update Committee Member", id='u-committee-update'),
             html.Button("Delete Committee Member", id='u-committee-delete'),
             html.A(
                 html.Button("Lookup", id='u-committee-lookup'), href='/committee/lookup/'

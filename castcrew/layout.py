@@ -21,6 +21,8 @@ castcrew_insert_layout = [
             dcc.Dropdown(id='a-castcrew-position', options=ROLE_TYPES),
             html.Label("Character Name: "),
             dcc.Input(id='a-castcrew-role-name', type='text'),
+            html.Label("List Rank: "),
+            dcc.Input(id='a-castcrew-list-rank', type='number'),
             html.Div(id='a-castcrew-message'),
             html.Button("Insert New Cast or Crew Member", id='a-castcrew-insert'),
             html.A(
@@ -46,10 +48,14 @@ castcrew_update_layout = [
     ),
     html.Div(
         [
+            html.Label("Select Production: "),
+            dcc.Dropdown(id='u-castcrew-production', options=[]),
             html.Label("Select Cast or Crew to update: "),
             dcc.Dropdown(id='u-castcrew-select', options=[], placeholder="Select a role"),
             html.Label("Character: "),
             dcc.Input(id='u-castcrew-role-name', type='text'),
+            html.Label("List Rank: "),
+            dcc.Input(id='u-castcrew-list-rank', type='number'),
             html.Div(id='u-castcrew-message'),
             html.Button("Update Person", id='u-castcrew-update'),
             html.Button("Delete Person", id='u-castcrew-delete'),

@@ -1,8 +1,12 @@
-from dash import Input, Output, State
+from dash import Input, Output, State, ctx
 
-from committee.database import get_committee_list, insert_committee_member, delete_committee_member
+from committee.database import (
+    delete_committee_member, get_committee_list, get_committee_positions,
+    insert_committee_member, update_committee_member
+)
 from current_role import current_role
-from database import get_committee_positions, get_names
+from database import get_names, update_form_fill_in_value
+from update_mapping import update_mapping
 
 def register_committee_lookup_callbacks(app, server):
     @app.callback(
@@ -63,11 +67,12 @@ def register_committee_insert_callbacks(app, server):
         State('a-committee-person', 'value'),
         State('a-committee-season', 'value'),
         State('a-committee-position', 'value'),
+        State('a-committee-list-rank', 'value'),
         prevent_initial_call=True
     )
-    def new_committee_member(n_clicks, person, season, position):
+    def new_committee_member(n_clicks, person, season, position, list_rank):
         person_id = person.split('|')[0] if person else None
-        return insert_committee_member(person_id, season, position)
+        return insert_committee_member(person_id, season, position, list_rank)
 
 
 def register_committee_update_callbacks(app, server):
@@ -95,15 +100,31 @@ def register_committee_update_callbacks(app, server):
     @app.callback(
         Output('u-committee-position', 'options'),
         Input('u-committee-loaded', 'data'),
+        Input('u-committee-season', 'value'),
     )
-    def update_names(loaded):
-        return get_committee_positions()
+    def update_names(loaded, season):
+        return get_committee_positions(season)
+
+    for datatype in ['value', 'date']:
+        for field in update_mapping['committee'][datatype].keys():
+            @app.callback(
+                Output(f'u-committee-{field}', datatype),
+                Input('u-committee-position', 'value'),
+            )
+            def update_field_value(selected_id, field=field):
+                return update_form_fill_in_value('committee', field, selected_id)
 
     @app.callback(
         Output('u-committee-message', 'children'),
+        Input('u-committee-update', 'n_clicks'),
         Input('u-committee-delete', 'n_clicks'),
         State('u-committee-position', 'value'),
+        State('u-committee-list-rank', 'value'),
         prevent_initial_call=True
     )
-    def remove_committee_member(n_clicks, position):
-        return delete_committee_member(position)
+    def change_committee_member(u_clicks, d_clicks, position, list_rank):
+        if ctx.triggered_id == "u-committee-update":
+            return update_committee_member(position, list_rank)
+
+        if ctx.triggered_id == "u-committee-delete":
+            return delete_committee_member(position)

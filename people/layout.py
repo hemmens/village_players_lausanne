@@ -38,7 +38,7 @@ people_insert_layout = [
                 options=[{'label': 'Mobile is Private', 'value': 'private'}]
             ),
             html.Label("Email: "),
-            dcc.Input(id='a-people-email', type='text'),
+            dcc.Input(id='a-people-email', type='email'),
             dcc.Checklist(
                 id='a-people-email-private',
                 options=[{'label': 'Email is Private', 'value': 'private'}]
@@ -99,7 +99,7 @@ people_update_layout = [
                 options=[{'label': 'Mobile is Private', 'value': 'private'}]
             ),
             html.Label("Email: "),
-            dcc.Input(id='u-people-email', type='text'),
+            dcc.Input(id='u-people-email', type='email'),
             dcc.Checklist(
                 id='u-people-email-private',
                 options=[{'label': 'Email is Private', 'value': 'private'}]

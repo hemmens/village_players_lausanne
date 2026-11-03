@@ -199,41 +199,6 @@ def get_names_for_person_update():
     )
 
 
-def get_committee_positions():
-    if not has_request_context():
-        return []
-
-    db = get_database(session["db_session_id"])
-
-    positions = list(
-        {
-            'label': f"{entry['season']} / {entry['position']}"
-                f" / {db.people.find_one({'_id': entry['holder']})['surname']}",
-            'value': str(entry['_id']),
-        }
-        for entry in db.committee.find({})
-    )
-    positions.reverse()
-    return positions
-
-
-def get_castcrew():
-    if not has_request_context():
-        return []
-
-    db = get_database(session["db_session_id"])
-
-    return list(
-        {
-            'label': f"{db.productions.find_one({'_id': x['production']})['title']}"
-                    f" / {db.people.find_one({'_id': x['person']})['surname']}"
-                    f" / {x['role']}",
-            'value': str(x['_id']),
-        }
-        for x in db.castcrew.find({})
-    )
-
-
 def get_members(add_empty=False):
     if not has_request_context():
         return []
