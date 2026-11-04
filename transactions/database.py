@@ -1,4 +1,5 @@
 import pandas as pd
+import re
 from datetime import date
 
 from bson.objectid import ObjectId
@@ -11,58 +12,62 @@ def get_recipients():
     db = get_database(session["db_session_id"])
     transactions = pd.DataFrame(db.transactions.find())
     people = pd.DataFrame(db.people.find()).set_index('_id')
-    productions = pd.DataFrame(db.productions.find()).set_index('_id')
-    festivals = pd.DataFrame(db.festivals.find()).set_index('_id')
-
     transactions = transactions.join(people, 'Recipient')
-    transactions = transactions.join(productions, 'Recipient')
-    transactions = transactions.join(festivals, 'Recipient', rsuffix='_festival')
-
     transactions['label'] = transactions.apply(
         lambda row: (
             f"{row['first_name']} {row['surname']}"
             if pd.notnull(row['first_name']) and pd.notnull(row['surname'])
             else (
-                row['title']
-                if pd.notnull(row['title'])
-                else (
-                    row['title_festival']
-                    if pd.notnull(row['title_festival'])
-                    else row['Recipient']
-                )
+                row['Recipient']
+                if type(row['Recipient']) == str
+                else None
             )
         ), axis=1
     )
-    transactions['value'] = transactions.Recipient.astype(str)
-    transactions = transactions[['label', 'value']].drop_duplicates()
-    transactions.sort_values('label', inplace=True)
-    return transactions.apply(lambda row: {'label': row['label'], 'value': row['value']}, axis=1).to_list()
+    transactions['value'] = transactions.apply(
+        lambda row: (
+            str(row['Recipient'])
+            if (
+                (pd.notnull(row['first_name']) and pd.notnull(row['surname']))
+                or type(row['Recipient']) == str
+            )
+            else None
+        ), axis=1
+    )
+    transactions = transactions[['label', 'value']].dropna().drop_duplicates().sort_values('label')
+    return transactions.to_dict('records')
 
 
 def get_transactions(t_type, start_date, end_date, recipient, production):
     transaction_filter = {}
     
     if t_type:
-        transaction_filter['Type'] = t_type
+        transaction_filter['Type'] = {'$in': t_type}
     if start_date:
         transaction_filter['Date'] = {'$gte': convert_date(start_date)}
     if end_date:
         transaction_filter['Date'] = transaction_filter.get('Date', {})
         transaction_filter['Date']['$lte'] = convert_date(end_date)
     if recipient:
-        try:
-            recipient = ObjectId(recipient)
-        except Exception:
-            pass
-        transaction_filter['Recipient'] = recipient
+        recipients = [
+            ObjectId(r) if re.fullmatch(r"[0-9a-f]{24}", r) is not None else r
+            for r in recipient
+        ]
+        transaction_filter['Recipient'] = {'$in': recipients}
     if production:
-        transaction_filter['Production'] = ObjectId(production)
+        productions = [ObjectId(p) for p in production]
+        transaction_filter['Production'] = {'$in': productions}
 
     db = get_database(session["db_session_id"])
     transactions = pd.DataFrame(db.transactions.find(transaction_filter))
+    if transactions.empty:
+        return pd.DataFrame().to_dict('records')
+
     transactions.Amount = transactions.Amount.astype(str)
-    transactions.Amount = transactions.Amount.astype(float)
     transactions.Date = transactions.Date.apply(lambda d: d.strftime("%d %B %Y"))
+    for col in ['Recipient', 'Production']:
+        if col not in transactions.columns:
+            transactions[col] = None
 
     people = pd.DataFrame(db.people.find()).set_index('_id')
     productions = pd.DataFrame(db.productions.find()).set_index('_id')
@@ -103,6 +108,17 @@ def get_transactions(t_type, start_date, end_date, recipient, production):
 
     transactions = transactions[['Type', 'Reference', 'Date', 'Amount', 'Description', 'Recipient', 'Production']]
     transactions.sort_values('Reference', ascending=False, inplace=True)
+    if any([bool(t) for t in [t_type, start_date, end_date, recipient, production]]):
+        transactions = pd.concat(
+            [
+                transactions,
+                pd.DataFrame(
+                    [['Total:', str(transactions.Amount.astype(float).sum().round(2))]],
+                    columns=['Type', 'Amount']
+                )
+            ],
+            ignore_index=True
+        )
     return transactions.to_dict('records')
 
 

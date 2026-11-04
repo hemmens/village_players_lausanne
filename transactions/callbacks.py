@@ -24,6 +24,13 @@ def register_transactions_lookup_callbacks(app, server):
         return role not in {"Committee", "Treasurer"}
     
     @app.callback(
+        Output('f-transactions-treasurer-access', 'hidden'),
+        Input('f-transactions-role', 'data'),
+    )
+    def update_treasurer_access_hidden(role):
+        return role != "Treasurer"
+    
+    @app.callback(
         Output('f-transactions-no-access', 'hidden'),
         Input('f-transactions-role', 'data'),
     )
@@ -42,7 +49,7 @@ def register_transactions_lookup_callbacks(app, server):
         Input('f-transactions-loaded', 'data'),
     )
     def update_productions(loaded):
-        return get_productions(add_empty=True)
+        return get_productions()
 
     @app.callback(
         Output('f-transactions-list', 'rowData'),

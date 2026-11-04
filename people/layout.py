@@ -48,7 +48,7 @@ people_insert_layout = [
                 {'label': gender.title(), 'value': gender} for gender in [''] + GENDERS
             ]),
             html.Label("GDPR Signed On: "),
-            dcc.DatePickerSingle(id='a-people-gdpr'),
+            dcc.DatePickerSingle(id='a-people-gdpr', clearable=True),
             html.Label("Committee Email: "),
             dcc.Input(id='a-people-committee-email', type='text'),
             html.Div(id='a-people-message'),
@@ -109,7 +109,7 @@ people_update_layout = [
                 {'label': gender.title(), 'value': gender} for gender in [''] + GENDERS
             ]),
             html.Label("GDPR Signed On: "),
-            dcc.DatePickerSingle(id='u-people-gdpr'),
+            dcc.DatePickerSingle(id='u-people-gdpr', clearable=True),
             html.Label("Committee Email: "),
             dcc.Input(id='u-people-committee-email', type='text'),
             html.Div(id='u-people-message'),

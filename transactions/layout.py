@@ -16,9 +16,9 @@ transactions_lookup_layout = [
             html.Label("Transaction Type: "),
             dcc.Dropdown(id='f-transactions-type', multi=True, options=TRANSACTION_TYPES),
             html.Label("Start Date: "),
-            dcc.DatePickerSingle(id='f-transactions-start-date'),
+            dcc.DatePickerSingle(id='f-transactions-start-date', clearable=True),
             html.Label("End Date: "),
-            dcc.DatePickerSingle(id='f-transactions-end-date'),
+            dcc.DatePickerSingle(id='f-transactions-end-date', clearable=True),
             html.Label("Recipient: "),
             dcc.Dropdown(id='f-transactions-recipient', multi=True, options=[]),
             html.Label("Production: "),
@@ -35,6 +35,12 @@ transactions_lookup_layout = [
                     {'field': 'Production'},
                 ]
             ),
+        ],
+        id='f-transactions-access',
+        hidden=True
+    ),
+    html.Div(
+        [
             html.A(
                 html.Button("Insert", id='f-transactions-insert'), href='/transactions/insert/'
             ),
@@ -42,7 +48,7 @@ transactions_lookup_layout = [
             #     html.Button("Update", id='f-transactions-update'), href='/transactions/update/'
             # ),
         ],
-        id='f-transactions-access',
+        id='f-transactions-treasurer-access',
         hidden=True
     ),
     html.A(
