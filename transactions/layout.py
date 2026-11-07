@@ -27,12 +27,12 @@ transactions_lookup_layout = [
                 id='f-transactions-list',
                 columnDefs=[
                     {'field': 'Type'},
-                    {'field': 'Reference'},
+                    {'field': 'Reference', 'width': 100},
                     {'field': 'Date'},
-                    {'field': 'Amount'},
-                    {'field': 'Description'},
-                    {'field': 'Recipient'},
-                    {'field': 'Production'},
+                    {'field': 'Amount', 'width': 100},
+                    {'field': 'Description', 'flex': 1},
+                    {'field': 'Recipient', 'flex': 1},
+                    {'field': 'Production', 'flex': 1},
                 ]
             ),
         ],
