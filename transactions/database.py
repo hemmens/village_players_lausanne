@@ -1,7 +1,126 @@
+import pandas as pd
+import re
+from datetime import date
+
 from bson.objectid import ObjectId
 from flask import session
 
 from database import convert_date, extract_name, get_database, get_new_ref, handle_decimal
+
+
+def get_recipients():
+    db = get_database(session["db_session_id"])
+    transactions = pd.DataFrame(db.transactions.find())
+    people = pd.DataFrame(db.people.find()).set_index('_id')
+    transactions = transactions.join(people, 'Recipient')
+    transactions['label'] = transactions.apply(
+        lambda row: (
+            f"{row['first_name']} {row['surname']}"
+            if pd.notnull(row['first_name']) and pd.notnull(row['surname'])
+            else (
+                row['Recipient']
+                if type(row['Recipient']) == str
+                else None
+            )
+        ), axis=1
+    )
+    transactions['value'] = transactions.apply(
+        lambda row: (
+            str(row['Recipient'])
+            if (
+                (pd.notnull(row['first_name']) and pd.notnull(row['surname']))
+                or type(row['Recipient']) == str
+            )
+            else None
+        ), axis=1
+    )
+    transactions = transactions[['label', 'value']].dropna().drop_duplicates().sort_values('label')
+    return transactions.to_dict('records')
+
+
+def get_transactions(t_type, start_date, end_date, recipient, production):
+    transaction_filter = {}
+    
+    if t_type:
+        transaction_filter['Type'] = {'$in': t_type}
+    if start_date:
+        transaction_filter['Date'] = {'$gte': convert_date(start_date)}
+    if end_date:
+        transaction_filter['Date'] = transaction_filter.get('Date', {})
+        transaction_filter['Date']['$lte'] = convert_date(end_date)
+    if recipient:
+        recipients = [
+            ObjectId(r) if re.fullmatch(r"[0-9a-f]{24}", r) is not None else r
+            for r in recipient
+        ]
+        transaction_filter['Recipient'] = {'$in': recipients}
+    if production:
+        productions = [ObjectId(p) for p in production]
+        transaction_filter['Production'] = {'$in': productions}
+
+    db = get_database(session["db_session_id"])
+    transactions = pd.DataFrame(db.transactions.find(transaction_filter))
+    if transactions.empty:
+        return pd.DataFrame().to_dict('records')
+
+    transactions.Amount = transactions.Amount.astype(str)
+    transactions.Date = transactions.Date.apply(lambda d: d.strftime("%d %B %Y"))
+    for col in ['Recipient', 'Production']:
+        if col not in transactions.columns:
+            transactions[col] = None
+
+    people = pd.DataFrame(db.people.find()).set_index('_id')
+    productions = pd.DataFrame(db.productions.find()).set_index('_id')
+    festivals = pd.DataFrame(db.festivals.find()).set_index('_id')
+    transactions = transactions.join(people, 'Recipient')
+    transactions = transactions.join(productions, 'Recipient')
+    transactions = transactions.join(festivals, 'Recipient', rsuffix='_festival')
+    transactions['Recipient'] = transactions.apply(
+        lambda row: (
+            f"{row['first_name']} {row['surname']}"
+            if pd.notnull(row['first_name']) and pd.notnull(row['surname'])
+            else (
+                row['title']
+                if pd.notnull(row['title'])
+                else (
+                    row['title_festival']
+                    if pd.notnull(row['title_festival'])
+                    else row['Recipient']
+                )
+            )
+        ), axis=1
+    )
+
+    transactions = transactions[['Type', 'Reference', 'Date', 'Amount', 'Description', 'Recipient', 'Production']]
+    transactions = transactions.join(productions, 'Production')
+    transactions = transactions.join(festivals, 'Production', rsuffix='_festival')
+    transactions['Production'] = transactions.apply(
+        lambda row: (
+            row['title']
+            if pd.notnull(row['title'])
+            else (
+                row['title_festival']
+                if pd.notnull(row['title_festival'])
+                else row['Production']
+            )
+        ), axis=1
+    )
+
+    transactions = transactions[['Type', 'Reference', 'Date', 'Amount', 'Description', 'Recipient', 'Production']]
+    transactions.sort_values('Reference', ascending=False, inplace=True)
+    if any([bool(t) for t in [t_type, start_date, end_date, recipient, production]]):
+        transactions = pd.concat(
+            [
+                transactions,
+                pd.DataFrame(
+                    [['Total:', str(transactions.Amount.astype(float).sum().round(2))]],
+                    columns=['Type', 'Amount']
+                )
+            ],
+            ignore_index=True
+        )
+    return transactions.to_dict('records')
+
 
 def insert_member(date, amount, mbr_type, season, mbr_renew,
             mbr_new_1, mbr_new_2, mbr_new_3, mbr_existing):
@@ -133,7 +252,7 @@ def insert_storage(date, amount, recipient_text):
         'Date': convert_date(date),
         'Amount': handle_decimal(amount),
         'Type': 'Storage',
-        'Description': recipient_text,
+        'Recipient': recipient_text,
     }
 
     db.transactions.insert_one(transaction_payload)

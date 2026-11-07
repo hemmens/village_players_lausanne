@@ -11,7 +11,7 @@ productions_lookup_layout = [
     dag.AgGrid(
         id='f-productions-details',
         columnDefs=[
-            {'field': 'detail', 'width': 200},
+            {'field': 'detail', 'width': 300},
             {'field': 'info', 'flex': 1},
         ],
         dashGridOptions={
