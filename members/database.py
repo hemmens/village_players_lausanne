@@ -9,6 +9,16 @@ from variables import MEMBER_LIST_COLUMNS
 
 SORT_COLUMNS = ['season', 'surname']
 
+
+def return_member_types(members):
+    types = members.type.to_list()
+    if "Honorary" in types:
+        return "Honorary"
+    if "Full" in types:
+        return "Full"
+    return ", ".join(types)
+
+
 def get_member_list(role, seasons, types, persons, columns):
     if not has_request_context() or role not in {"Committee", "Treasurer", "Public"}:
         return pd.DataFrame().to_dict('records')
@@ -99,7 +109,10 @@ def get_member_check(first_name, surname, email, season):
     members.sort_values('ratio', ascending=False, inplace=True)
     member = members.iloc[0]
     if member.ratio >= 0.8:
-        return f"{member.full_name.title()} is a {season} member"
+        members = members[members.full_name == member.full_name]
+        member_type = return_member_types(members)
+
+        return f"{member.full_name.title()} is a {season} member ({member_type})"
 
     if email:
         members = members[members.email == email]
@@ -116,7 +129,10 @@ def get_member_check(first_name, surname, email, season):
 
         member = members.iloc[0]
         if member.ratio >= 0.5:
-            return f"{member.full_name.title()} is a {season} member"
+            members = members[members.full_name == member.full_name]
+            member_type = return_member_types(members)
+
+            return f"{member.full_name.title()} is a {season} member ({member_type})"
         else:
             return """
                     This email matches a member but the provided name does not.
