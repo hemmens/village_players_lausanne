@@ -32,8 +32,8 @@ from productions.callbacks import (
 from productions.layout import (
     productions_insert_layout, productions_lookup_layout, productions_update_layout
 )
-from transactions.callbacks import register_transactions_insert_callbacks
-from transactions.layout import transactions_insert_layout
+from transactions.callbacks import register_transactions_insert_callbacks, register_transactions_lookup_callbacks
+from transactions.layout import transactions_insert_layout, transactions_lookup_layout
 
 APP_DIR = Path(__file__).resolve().parent
 ENV_FILE = APP_DIR / ".env"
@@ -51,7 +51,7 @@ for route in [
     'castcrew/insert', 'castcrew/update',
     'people/insert', 'people/update',
     'balance/insert',
-    'transactions/insert',
+    'transactions/lookup', 'transactions/insert',
 ]:
     dashboards[route] = Dash(
         __name__ + '_' + route.replace('/', '_'),
@@ -232,6 +232,8 @@ dashboards['balance/insert'].layout = balance_insert_layout
 register_balance_insert_callbacks(dashboards['balance/insert'], app)
 dashboards['transactions/insert'].layout = transactions_insert_layout
 register_transactions_insert_callbacks(dashboards['transactions/insert'], app)
+dashboards['transactions/lookup'].layout = transactions_lookup_layout
+register_transactions_lookup_callbacks(dashboards['transactions/lookup'], app)
 
 if __name__ == "__main__":
     # app.run(host="127.0.0.1", port=int(os.environ.get("PORT", "5000")), debug=False)
