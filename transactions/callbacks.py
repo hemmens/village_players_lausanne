@@ -1,7 +1,8 @@
-from datetime import date, timedelta
+import pandas as pd
+from datetime import date, datetime, timedelta
 
 from current_role import current_role
-from dash import Input, Output, State, no_update
+from dash import Input, Output, State, dcc, no_update
 from database import get_members, get_names, get_productions
 from transactions.database import get_recipients, get_transactions, insert_transaction
 from update_mapping import grey_out
@@ -52,6 +53,16 @@ def register_transactions_lookup_callbacks(app, server):
         return get_productions()
 
     @app.callback(
+        Output('f-transactions-start-date', 'date'),
+        Input('f-transactions-loaded', 'data'),
+    )
+    def update_start_date(loaded):
+        start_date = date.today()
+        if start_date.month < 7:
+            start_date -= timedelta(days=300)
+        return start_date.replace(day=1, month=6)
+
+    @app.callback(
         Output('f-transactions-list', 'rowData'),
         Input('f-transactions-type', 'value'),
         Input('f-transactions-start-date', 'date'),
@@ -65,6 +76,23 @@ def register_transactions_lookup_callbacks(app, server):
             return get_transactions(t_type, start_date, end_date, recipient, production)
 
         return []
+
+    @app.callback(
+        Output('f-transactions-download', 'data'),
+        Input('f-transactions-button', 'n_clicks'),
+        State('f-transactions-list', 'rowData'),
+        State('f-transactions-list', 'columnDefs'),
+        prevent_initial_call=True
+    )
+    def export_transactions_data(n, transactions_list, columns):
+        cols = [x['field'] for x in columns]
+        df = pd.DataFrame(transactions_list)[cols]
+        df.set_index('Reference', inplace=True)
+        today = datetime.now().strftime('%Y%m%d')
+        writer = pd.ExcelWriter(f'vp_transactions_{today}.xlsx')
+        df.to_excel(writer)
+        writer.close()
+        return dcc.send_file(f'vp_transactions_{today}.xlsx')
 
 
 def register_transactions_insert_callbacks(app, server):
