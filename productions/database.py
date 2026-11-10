@@ -29,6 +29,12 @@ def get_poster_image(production_id):
         production = db.productions.find_one({'_id': ObjectId(production_id)})
         if production and 'poster_url' in production:
             poster_url = production['poster_url']
+        elif production and 'festival' in production:
+            festival = db.festivals.find_one({'_id': production['festival']})
+            if festival and 'poster_url' in festival:
+                poster_url = festival['poster_url']
+            else:
+                return url_template
         else:
             return url_template
 
@@ -228,7 +234,7 @@ def update_production(
         return ""
 
     if not production_id:
-        return "Person ID is required."
+        return "Production ID is required."
 
     try:
         production_id = ObjectId(production_id)
@@ -280,9 +286,11 @@ def update_production(
 
     result = db.productions.update_one({'_id': production_id}, update_payload)
     if result.modified_count == 0:
-        return "Production not found or no data changes"
+        result = db.festivals.update_one({'_id': production_id}, update_payload)
+    if result.modified_count == 0:
+        return "Production/Festival not found or no data changes"
 
-    return "Production updated successfully"
+    return "Production/Festival updated successfully"
 
 
 def delete_production(production_id):
@@ -295,7 +303,7 @@ def delete_production(production_id):
     try:
         production_id = ObjectId(production_id)
     except Exception as e:
-        return f"Invalid person ID: {e}"
+        return f"Invalid production ID: {e}"
 
     db = get_database(session["db_session_id"])
 
@@ -310,6 +318,6 @@ def delete_production(production_id):
     if result.deleted_count == 0:
         result = db.festivals.delete_one({'_id': production_id})
     if result.deleted_count == 0:
-        return "Production or Festival not found"
+        return "Production/Festival not found"
 
-    return "Production or Festival deleted successfully"
+    return "Production/Festival deleted successfully"

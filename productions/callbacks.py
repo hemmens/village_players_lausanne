@@ -46,7 +46,7 @@ def register_productions_lookup_callbacks(app, server):
     def update_poster_size(poster_src):
         if poster_src and re.search(VPS_LOGO_GD_ID, poster_src):
             return {'height': '100px'}
-        return {'height': '500px'}
+        return {'height': '400px'}
 
     @app.callback(
         Output('f-productions-details', 'rowData'),
