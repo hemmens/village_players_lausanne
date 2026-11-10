@@ -115,6 +115,7 @@ people_update_layout = [
             html.Div(id='u-people-message'),
             html.Button("Update Person", id='u-people-update'),
             html.Button("Delete Person", id='u-people-delete'),
+            html.Button("Empty All Fields", id='u-people-empty'),
             html.A(
                 html.Button("Insert", id='u-people-insert'), href='/people/insert/'
             ),

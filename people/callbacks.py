@@ -91,8 +91,11 @@ def register_people_update_callbacks(app, server):
             @app.callback(
                 Output(f'u-people-{field}', datatype),
                 Input('u-people-select', 'value'),
+                Input('u-people-empty', 'n_clicks'),
             )
-            def update_field_value(selected_id, field=field):
+            def update_field_value(selected_id, empty_clicks, field=field):
+                if ctx.triggered_id == 'u-people-empty':
+                    return None
                 return update_form_fill_in_value('people', field, selected_id)
 
     @app.callback(
