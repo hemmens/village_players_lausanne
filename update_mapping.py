@@ -6,7 +6,10 @@ grey_out = {
 
 update_mapping = {
     'productions': {
-        'value': {'venue': 'venue', 'author': 'author', 'festival': 'festival'},
+        'value': {
+            'venue': 'venue', 'author': 'author',
+            'festival': 'festival', 'poster-url': 'poster_url'
+        },
         'date': {'open': 'open_date', 'close': 'close_date'},
     },
     'castcrew': {
@@ -14,7 +17,7 @@ update_mapping = {
         'date': {},
     },
     'festivals': {
-        'value': {'venue': 'venue'},
+        'value': {'venue': 'venue', 'poster-url': 'poster_url'},
         'date': {'open': 'open_date', 'close': 'close_date'},
     },
     'people': {

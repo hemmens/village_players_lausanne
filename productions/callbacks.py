@@ -1,11 +1,14 @@
+import re
+
 from current_role import current_role
 from dash import Input, Output, State, ctx, no_update
 from database import get_festivals, get_productions, update_form_fill_in_value
 from productions.database import (
-    get_production_costs, get_production_details, insert_production,
+    get_poster_image, get_production_costs, get_production_details, insert_production,
     update_production, delete_production
 )
 from update_mapping import grey_out, update_mapping
+from variables import GD_ID_REGEX, VPS_LOGO_GD_ID
 
 def register_productions_lookup_callbacks(app, server):
     @app.callback(
@@ -28,6 +31,22 @@ def register_productions_lookup_callbacks(app, server):
     )
     def update_productions(loaded):
         return get_productions()
+
+    @app.callback(
+        Output('f-productions-poster', 'src'),
+        Input('f-productions-select', 'value'),
+    )
+    def update_poster_image(production_id):
+        return get_poster_image(production_id)
+
+    @app.callback(
+        Output('f-productions-poster', 'style'),
+        Input('f-productions-poster', 'src'),
+    )
+    def update_poster_size(poster_src):
+        if poster_src and re.search(VPS_LOGO_GD_ID, poster_src):
+            return {'height': '100px'}
+        return {'height': '500px'}
 
     @app.callback(
         Output('f-productions-details', 'rowData'),
@@ -77,7 +96,7 @@ def register_productions_insert_callbacks(app, server):
     def update_festivals(loaded):
         return get_festivals(add_empty=True)
 
-    for field in ['venue', 'open', 'close']:
+    for field in ['venue', 'open', 'close', 'poster-url']:
         @app.callback(
             Output(f'a-productions-{field}', 'disabled'),
             Input('a-productions-festival', 'value'),
@@ -131,10 +150,11 @@ def register_productions_insert_callbacks(app, server):
         State('a-productions-open', 'date'),
         State('a-productions-close', 'date'),
         State('a-productions-festival', 'value'),
+        State('a-productions-poster-url', 'value'),
         prevent_initial_call=True
     )
-    def new_production(n_clicks, p_type, name, venue, author, open, close, festival):
-        return insert_production(p_type, name, venue, author, open, close, festival)
+    def new_production(n_clicks, p_type, name, venue, author, open, close, festival, poster_url):
+        return insert_production(p_type, name, venue, author, open, close, festival, poster_url)
 
 
 def register_productions_update_callbacks(app, server):
@@ -195,13 +215,14 @@ def register_productions_update_callbacks(app, server):
         State('u-productions-open', 'date'),
         State('u-productions-close', 'date'),
         State('u-productions-festival', 'value'),
+        State('u-productions-poster-url', 'value'),
         prevent_initial_call=True
     )
     def change_production_details(u_clicks, d_clicks, production_id, venue, author,
-                              open_date, close_date, festival_id):
+                              open_date, close_date, festival_id, poster_url):
         if ctx.triggered_id == "u-productions-update":
             return update_production(production_id, venue, author,
-                              open_date, close_date, festival_id)
+                              open_date, close_date, festival_id, poster_url)
 
         if ctx.triggered_id == "u-productions-delete":
             return delete_production(production_id)

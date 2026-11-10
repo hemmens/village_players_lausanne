@@ -1,10 +1,46 @@
 import pandas as pd
+import re
 
 from bson.objectid import ObjectId
 from flask import has_request_context, session
 
 from database import convert_date, find_collection_link, get_database
-from variables import ROLE_TYPES
+from variables import GD_ID_REGEX, ROLE_TYPES, VPS_LOGO_GD_ID
+
+
+def get_poster_image(production_id):
+    url_template = f'https://drive.google.com/thumbnail?id={VPS_LOGO_GD_ID}'
+
+    if not production_id:
+        return url_template
+
+    if "db_session_id" not in session.keys():
+        return url_template
+
+    db = get_database(session["db_session_id"])
+
+    festival = db.festivals.find_one({'_id': ObjectId(production_id)})
+    if festival:
+        if 'poster_url' in festival:
+            poster_url = festival['poster_url']
+        else:
+            return url_template
+    else:
+        production = db.productions.find_one({'_id': ObjectId(production_id)})
+        if production and 'poster_url' in production:
+            poster_url = production['poster_url']
+        else:
+            return url_template
+
+    if not poster_url:
+        return url_template
+
+    poster_id = re.findall(GD_ID_REGEX, poster_url)[0]
+    poster_url = url_template.replace(VPS_LOGO_GD_ID, poster_id)
+    print(f"Poster URL: {poster_url}")
+
+    return poster_url
+
 
 def get_production_details(production_id):
     if not production_id:
@@ -129,7 +165,7 @@ def get_production_costs(production_id):
     return pd.DataFrame(output).sort_values('reference').to_dict('records')
 
 
-def insert_production(p_type, name, venue, author, open, close, festival_id):
+def insert_production(p_type, name, venue, author, open, close, festival_id, poster_url):
     if not has_request_context():
         return ""
 
@@ -175,13 +211,19 @@ def insert_production(p_type, name, venue, author, open, close, festival_id):
         if p_type == 'Festival':
             return "Only a production can have an author"
         production_payload['author'] = author
+    if poster_url:
+        if festival_id:
+            return "Poster can only be set by the festival"
+        production_payload['poster_url'] = poster_url
 
     new_production = collection.insert_one(production_payload)
 
     return f"New production: {str(new_production.inserted_id)}"
 
 
-def update_production(production_id, venue, author, open_date, close_date, festival_id):
+def update_production(
+        production_id, venue, author, open_date, close_date, festival_id, poster_url
+):
     if not has_request_context():
         return ""
 
@@ -228,6 +270,11 @@ def update_production(production_id, venue, author, open_date, close_date, festi
         update_payload['$set']['festival'] = festival_id
     else:
         update_payload['$unset']['festival'] = ""
+
+    if poster_url:
+        update_payload['$set']['poster_url'] = poster_url
+    else:
+        update_payload['$unset']['poster_url'] = ""
 
     db = get_database(session["db_session_id"])
 
