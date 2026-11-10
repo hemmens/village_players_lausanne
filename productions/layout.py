@@ -1,11 +1,24 @@
 from dash import html, dcc
 import dash_ag_grid as dag
 
+from variables import VPS_LOGO_GD_ID
+
 productions_lookup_layout = [
     dcc.Store(id='f-productions-loaded', data=True),
     dcc.Store(id='f-productions-role', storage_type='session'),
     html.H1('Village Players Database Interface'),
     html.H2('Productions'),
+    html.Div(
+        html.Img(
+            src=f'https://drive.google.com/thumbnail?id={VPS_LOGO_GD_ID}',
+            style={'height': '100px'},
+            id='f-productions-poster'
+        ),
+        style={
+            "display": "flex",
+            "justifyContent": "center"
+        }
+    ),
     html.Label("Select Production: "),
     dcc.Dropdown(id='f-productions-select', options=[], placeholder='Select Production'),
     dag.AgGrid(
@@ -71,6 +84,8 @@ productions_insert_layout = [
             dcc.DatePickerSingle(id='a-productions-close'),
             html.Label("Festival: "),
             dcc.Dropdown(id='a-productions-festival', options=[]),
+            html.Label("Poster URL: "),
+            dcc.Input(id='a-productions-poster-url', type='url'),
             html.Div(id='a-productions-message'),
             html.Button("Insert New Production", id='a-productions-insert'),
             html.A(
@@ -111,6 +126,8 @@ productions_update_layout = [
             dcc.DatePickerSingle(id='u-productions-close'),
             html.Label("Festival: "),
             dcc.Dropdown(id='u-productions-festival', options=[]),
+            html.Label("Poster URL: "),
+            dcc.Input(id='u-productions-poster-url', type='url'),
             html.Div(id='u-productions-message'),
             html.Button("Update Production", id='u-productions-update'),
             html.Button("Delete Production", id='u-productions-delete'),

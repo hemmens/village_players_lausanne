@@ -1,7 +1,9 @@
 BANK_COST = -5
+GD_ID_REGEX = '[A-Za-z0-9_-]{25,}'
 MEMBER_COST = 95
 STORAGE_COST = -370
 STORAGE_OWNER = "Procimmo Real Estate"
+VPS_LOGO_GD_ID = "1UTtOGtcmj_XSwWst2k8Q8jZaoWE5cGxi"
 GENDERS = [
     "male",
     "female",
