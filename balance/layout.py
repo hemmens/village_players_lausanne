@@ -7,39 +7,69 @@ from variables import SEASONS
 
 FIRST_YEAR = int(SEASONS[-1][:4])
 TODAY = date.today()
+MONTHS = [
+    {'label': 'January', 'value': 1},
+    {'label': 'February', 'value': 2},
+    {'label': 'March', 'value': 3},
+    {'label': 'April', 'value': 4},
+    {'label': 'May', 'value': 5},
+    {'label': 'June', 'value': 6},
+    {'label': 'July', 'value': 7},
+    {'label': 'August', 'value': 8},
+    {'label': 'September', 'value': 9},
+    {'label': 'October', 'value': 10},
+    {'label': 'November', 'value': 11},
+    {'label': 'December', 'value': 12},
+]
+YEARS = list(range(FIRST_YEAR, (TODAY.year + 1)))
 
-# balance_lookup_layout = [
-#     dcc.Store(id='f-balance-loaded', data=True),
-#     dcc.Store(id='f-balance-role', storage_type='session'),
-#     html.H1('Village Players Database Interface'),
-#     html.H2('Balance'),
-#     html.Label("Amount: "),
-#     dcc.Dropdown(id='f-balance-seasons', multi=True, options=SEASONS, value=[SEASONS[0]]),
-#     dag.AgGrid(
-#         id='f-balance-list',
-#         columnDefs=[
-#             {'field': 'season', 'headerName': 'Season'},
-#             {'field': 'position', 'headerName': 'Position'},
-#             {'field': 'full_name', 'headerName': 'Name'},
-#             {'field': 'balance_email', 'headerName': 'Email'},
-#         ]
-#     ),
-#     html.Div(
-#         [
-#             html.A(
-#                 html.Button("Insert", id='f-balance-insert'), href='/balance/insert/'
-#             ),
-#             html.A(
-#                 html.Button("Update", id='f-balance-update'), href='/balance/update/'
-#             ),
-#         ],
-#         id='f-balance-access',
-#         hidden=True
-#     ),
-#     html.A(
-#         html.Button("Home", id='f-balance-home'), href='/'
-#     ),
-# ]
+balance_lookup_layout = [
+    dcc.Store(id='f-balance-loaded', data=True),
+    dcc.Store(id='f-balance-role', storage_type='session'),
+    html.H1('Village Players Database Interface'),
+    html.H2('Balance'),
+    html.Div(
+        "Committee access only", id='f-balance-no-access', hidden=False
+    ),
+    html.Div(
+        [
+            html.Label("Month: "),
+            dcc.Dropdown(id='f-balance-month', multi=True, options=MONTHS),
+            html.Label("Year: "),
+            dcc.Dropdown(id='f-balance-year', multi=True, options=YEARS),
+            html.Label("Start Date: "),
+            dcc.DatePickerSingle(id='f-balance-start-date', clearable=True),
+            html.Label("End Date: "),
+            dcc.DatePickerSingle(id='f-balance-end-date', clearable=True),
+            dag.AgGrid(
+                id='f-balance-list',
+                columnDefs=[
+                    {'field': 'month'},
+                    {'field': 'year'},
+                    {'field': 'amount'},
+                    {'field': 'difference'},
+                ]
+            ),
+        ],
+        id='f-balance-access',
+        hidden=True
+    ),
+    html.Div(
+        [
+            html.A(
+                html.Button("Insert", id='f-balance-insert'), href='/balance/insert/'
+            ),
+            # html.A(
+            #     html.Button("Update", id='f-balance-update'), href='/balance/update/'
+            # ),
+        ],
+        id='f-balance-treasurer-access',
+        hidden=True
+    ),
+    html.A(
+        html.Button("Home", id='f-balance-home'), href='/'
+    ),
+]
 
 balance_insert_layout = [
     dcc.Store(id='a-balance-loaded', data=True),
@@ -57,33 +87,20 @@ balance_insert_layout = [
             html.Label("Month: "),
             dcc.Dropdown(
                 id='a-balance-month',
-                options=[
-                    {'label': 'January', 'value': 1},
-                    {'label': 'February', 'value': 2},
-                    {'label': 'March', 'value': 3},
-                    {'label': 'April', 'value': 4},
-                    {'label': 'May', 'value': 5},
-                    {'label': 'June', 'value': 6},
-                    {'label': 'July', 'value': 7},
-                    {'label': 'August', 'value': 8},
-                    {'label': 'September', 'value': 9},
-                    {'label': 'October', 'value': 10},
-                    {'label': 'November', 'value': 11},
-                    {'label': 'December', 'value': 12},
-                ],
+                options=MONTHS,
                 value=(TODAY - timedelta(10)).month
             ),
             html.Label("Year: "),
             dcc.Dropdown(
                 id='a-balance-year',
-                options=list(range(FIRST_YEAR, (TODAY.year + 1))),
+                options=YEARS,
                 value=(TODAY - timedelta(10)).year
             ),
             html.Div(id='a-balance-message'),
             html.Button("Insert New Balance Amount", id='a-balance-insert'),
-            # html.A(
-            #     html.Button("Lookup", id='a-balance-lookup'), href='/balance/lookup/'
-            # ),
+            html.A(
+                html.Button("Lookup", id='a-balance-lookup'), href='/balance/lookup/'
+            ),
             # html.A(
             #     html.Button("Update", id='a-balance-update'), href='/balance/update/'
             # ),
