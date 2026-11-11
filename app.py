@@ -23,6 +23,8 @@ from committee.layout import (
 from database import make_client, save_client, close_client
 from members.callbacks import register_member_lookup_callbacks, register_member_search_callbacks
 from members.layout import members_lookup_layout, members_search_layout
+from newsletters.callbacks import register_newsletters_lookup_callbacks, register_newsletters_insert_callbacks
+from newsletters.layout import newsletters_lookup_layout, newsletters_insert_layout
 from people.callbacks import register_people_insert_callbacks, register_people_update_callbacks
 from people.layout import people_insert_layout, people_update_layout
 from productions.callbacks import (
@@ -48,6 +50,7 @@ for route in [
     'members/lookup', 'members/search',
     'productions/lookup', 'productions/insert', 'productions/update',
     'committee/lookup', 'committee/insert', 'committee/update',
+    'newsletters/lookup', 'newsletters/insert',
     'castcrew/insert', 'castcrew/update',
     'people/insert', 'people/update',
     'balance/lookup', 'balance/insert',
@@ -220,6 +223,10 @@ dashboards['committee/insert'].layout = committee_insert_layout
 register_committee_insert_callbacks(dashboards['committee/insert'], app)
 dashboards['committee/update'].layout = committee_update_layout
 register_committee_update_callbacks(dashboards['committee/update'], app)
+dashboards['newsletters/lookup'].layout = newsletters_lookup_layout
+register_newsletters_lookup_callbacks(dashboards['newsletters/lookup'], app)
+dashboards['newsletters/insert'].layout = newsletters_insert_layout
+register_newsletters_insert_callbacks(dashboards['newsletters/insert'], app)
 dashboards['castcrew/insert'].layout = castcrew_insert_layout
 register_castcrew_insert_callbacks(dashboards['castcrew/insert'], app)
 dashboards['castcrew/update'].layout = castcrew_update_layout
