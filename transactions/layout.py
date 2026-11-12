@@ -13,6 +13,7 @@ transactions_lookup_layout = [
     ),
     html.Div(
         [
+            dcc.Download(id='f-transactions-download'),
             html.Label("Transaction Type: "),
             dcc.Dropdown(id='f-transactions-type', multi=True, options=TRANSACTION_TYPES),
             html.Label("Start Date: "),
@@ -30,11 +31,12 @@ transactions_lookup_layout = [
                     {'field': 'Reference', 'width': 100},
                     {'field': 'Date'},
                     {'field': 'Amount', 'width': 100},
-                    {'field': 'Description', 'flex': 1},
-                    {'field': 'Recipient', 'flex': 1},
-                    {'field': 'Production', 'flex': 1},
+                    {'field': 'Description', 'width': 300},
+                    {'field': 'Recipient', 'width': 300},
+                    {'field': 'Production', 'width': 300},
                 ]
             ),
+            html.Button("Export to Excel", id='f-transactions-button'),
         ],
         id='f-transactions-access',
         hidden=True

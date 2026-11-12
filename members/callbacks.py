@@ -1,6 +1,7 @@
 import pandas as pd
-from current_role import current_role
 from datetime import datetime
+
+from current_role import current_role
 from dash import Input, Output, State, dcc
 from database import get_names
 from members.database import get_member_check, get_member_list

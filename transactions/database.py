@@ -114,7 +114,7 @@ def get_transactions(t_type, start_date, end_date, recipient, production):
                 transactions,
                 pd.DataFrame(
                     [['Total:', str(transactions.Amount.astype(float).sum().round(2))]],
-                    columns=['Type', 'Amount']
+                    columns=['Date', 'Amount']
                 )
             ],
             ignore_index=True
