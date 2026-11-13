@@ -45,9 +45,7 @@ def get_poster_image(production_id):
     if not poster_id:
         return url_template
 
-    poster_url = url_template.replace(VPS_LOGO_GD_ID, poster_id[0])
-
-    return poster_url
+    return url_template.replace(VPS_LOGO_GD_ID, poster_id[0])
 
 
 def get_production_details(production_id):
