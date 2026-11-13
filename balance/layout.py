@@ -3,24 +3,12 @@ from datetime import date, timedelta
 from dash import html, dcc
 import dash_ag_grid as dag
 
+from balance.database import MONTHS
 from variables import SEASONS
 
 FIRST_YEAR = int(SEASONS[-1][:4])
 TODAY = date.today()
-MONTHS = [
-    {'label': 'January', 'value': 1},
-    {'label': 'February', 'value': 2},
-    {'label': 'March', 'value': 3},
-    {'label': 'April', 'value': 4},
-    {'label': 'May', 'value': 5},
-    {'label': 'June', 'value': 6},
-    {'label': 'July', 'value': 7},
-    {'label': 'August', 'value': 8},
-    {'label': 'September', 'value': 9},
-    {'label': 'October', 'value': 10},
-    {'label': 'November', 'value': 11},
-    {'label': 'December', 'value': 12},
-]
+MONTHS = [{'label': mth_str, 'value': mth_int} for mth_int, mth_str in MONTHS.items()]
 YEARS = list(range(FIRST_YEAR, (TODAY.year + 1)))
 
 balance_lookup_layout = [

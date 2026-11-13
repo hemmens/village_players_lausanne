@@ -5,6 +5,8 @@ from flask import has_request_context, session
 
 from database import convert_date, get_database, handle_decimal
 
+MONTHS = {x: datetime(2026, x, 1).strftime('%B') for x in range(1,13)}
+
 
 def get_balance(months, years, start_date, end_date):
     if not has_request_context():
@@ -33,10 +35,7 @@ def get_balance(months, years, start_date, end_date):
     balance['difference'] = balance.amount - balance.amount.shift(1)
     balance = balance[['month', 'year', 'amount', 'difference']]
 
-    balance.month = balance.month.map({
-        1: 'January', 2: 'February', 3: 'March', 4: 'April', 5: 'May', 6: 'June', 7: 'July',
-        8: 'August', 9: 'September', 10: 'October', 11: 'November', 12: 'December'
-    })
+    balance.month = balance.month.map(MONTHS)
     for col in ['amount', 'difference']:
         balance[col] = balance[col].apply(lambda x: f'{x:.2f}')
 
