@@ -7,8 +7,8 @@ from dash import Dash
 from flask import Flask, redirect, render_template, request, session, url_for
 from pymongo.errors import PyMongoError
 
-from balance.callbacks import register_balance_insert_callbacks
-from balance.layout import balance_insert_layout
+from balance.callbacks import register_balance_insert_callbacks, register_balance_lookup_callbacks
+from balance.layout import balance_insert_layout, balance_lookup_layout
 from castcrew.callbacks import (
     register_castcrew_insert_callbacks, register_castcrew_update_callbacks
 )
@@ -50,7 +50,7 @@ for route in [
     'committee/lookup', 'committee/insert', 'committee/update',
     'castcrew/insert', 'castcrew/update',
     'people/insert', 'people/update',
-    'balance/insert',
+    'balance/lookup', 'balance/insert',
     'transactions/lookup', 'transactions/insert',
 ]:
     dashboards[route] = Dash(
@@ -228,6 +228,8 @@ dashboards['people/insert'].layout = people_insert_layout
 register_people_insert_callbacks(dashboards['people/insert'], app)
 dashboards['people/update'].layout = people_update_layout
 register_people_update_callbacks(dashboards['people/update'], app)
+dashboards['balance/lookup'].layout = balance_lookup_layout
+register_balance_lookup_callbacks(dashboards['balance/lookup'], app)
 dashboards['balance/insert'].layout = balance_insert_layout
 register_balance_insert_callbacks(dashboards['balance/insert'], app)
 dashboards['transactions/insert'].layout = transactions_insert_layout
