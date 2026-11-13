@@ -41,9 +41,11 @@ def get_poster_image(production_id):
     if not poster_url:
         return url_template
 
-    poster_id = re.findall(GD_ID_REGEX, poster_url)[0]
-    poster_url = url_template.replace(VPS_LOGO_GD_ID, poster_id)
-    print(f"Poster URL: {poster_url}")
+    poster_id = re.findall(GD_ID_REGEX, poster_url)
+    if not poster_id:
+        return url_template
+
+    poster_url = url_template.replace(VPS_LOGO_GD_ID, poster_id[0])
 
     return poster_url
 
