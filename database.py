@@ -190,7 +190,11 @@ def get_names_for_person_update():
 
     db = get_database(session["db_session_id"])
 
-    people = pd.DataFrame(db.people.find({})).sort_values(['surname', 'first_name'])
+    people = pd.DataFrame(db.people.find({}))
+    if people.empty:
+        return []
+
+    people.sort_values(['surname', 'first_name'], inplace=True)
 
     return list(
         {
