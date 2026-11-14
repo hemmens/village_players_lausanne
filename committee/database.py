@@ -49,8 +49,6 @@ def get_committee_list(role, seasons):
     committee = committee[['season', 'position', 'full_name', 'committee_email', 'list_rank']]
     committee['committee_email'] = committee['committee_email'].fillna('')
     committee.position = committee.position.apply(lambda x: x.title())
-    if 'list_rank' not in committee.columns:
-        committee['list_rank'] = 0
     committee.sort_values(['season', 'list_rank'], inplace=True)
     return committee.to_dict('records')
 
