@@ -41,11 +41,14 @@ def get_committee_list(role, seasons):
     people = pd.DataFrame(db.people.find()).set_index('_id')
     committee = committee.join(people, 'holder')
     committee['full_name'] = committee.apply(lambda row: f"{row.first_name} {row.surname}", axis=1)
+
+    for col in ['committee_email', 'list_rank']:
+        if col not in committee.columns:
+            committee[col] = pd.NA
+
     committee = committee[['season', 'position', 'full_name', 'committee_email', 'list_rank']]
     committee['committee_email'] = committee['committee_email'].fillna('')
     committee.position = committee.position.apply(lambda x: x.title())
-    if 'list_rank' not in committee.columns:
-        committee['list_rank'] = 0
     committee.sort_values(['season', 'list_rank'], inplace=True)
     return committee.to_dict('records')
 

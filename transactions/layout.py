@@ -27,9 +27,9 @@ transactions_lookup_layout = [
             dag.AgGrid(
                 id='f-transactions-list',
                 columnDefs=[
-                    {'field': 'Type'},
+                    {'field': 'Type', 'width': 200},
                     {'field': 'Reference', 'width': 100},
-                    {'field': 'Date'},
+                    {'field': 'Date', 'width': 200},
                     {'field': 'Amount', 'width': 100},
                     {'field': 'Description', 'width': 300},
                     {'field': 'Recipient', 'width': 300},

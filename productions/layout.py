@@ -25,7 +25,7 @@ productions_lookup_layout = [
         id='f-productions-details',
         columnDefs=[
             {'field': 'detail', 'width': 300},
-            {'field': 'info', 'flex': 1},
+            {'field': 'info', 'width': 400},
         ],
         dashGridOptions={
             'headerHeight': 0,
@@ -39,7 +39,7 @@ productions_lookup_layout = [
                     {'field': 'date', 'width': 200},
                     {'field': 'amount', 'width': 150},
                     {'field': 'recipient', 'width': 300},
-                    {'field': 'description', 'flex': 1},
+                    {'field': 'description', 'width': 400},
                 ]
             ),
             html.A(
