@@ -13,10 +13,10 @@ committee_lookup_layout = [
     dag.AgGrid(
         id='f-committee-list',
         columnDefs=[
-            {'field': 'season', 'headerName': 'Season'},
-            {'field': 'position', 'headerName': 'Position'},
-            {'field': 'full_name', 'headerName': 'Name'},
-            {'field': 'committee_email', 'headerName': 'Email'},
+            {'field': 'season', 'headerName': 'Season', 'width': 150},
+            {'field': 'position', 'headerName': 'Position', 'width': 250},
+            {'field': 'full_name', 'headerName': 'Name', 'width': 250},
+            {'field': 'committee_email', 'headerName': 'Email', 'width': 250},
         ]
     ),
     html.Div(

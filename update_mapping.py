@@ -36,6 +36,14 @@ update_mapping = {
     },
     'balance': {
         'value': {'amount': 'balance'},
-        'date': [],
+        'date': {},
     },
+    'newsletters': {
+        'value': {
+            'url': 'url', 'name': 'name'
+        },
+        'date': {
+            'sent': 'sent'
+        }
+    }
 }
