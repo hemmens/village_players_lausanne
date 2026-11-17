@@ -1,6 +1,8 @@
 import os
 import pandas as pd
 from datetime import datetime
+from threading import Lock
+from time import monotonic
 from urllib.parse import quote
 
 from bson.decimal128 import Decimal128
@@ -15,7 +17,12 @@ from update_mapping import update_mapping
 
 load_dotenv()
 
+DB_SESSION_TTL_SECONDS = int(os.getenv("DB_SESSION_TTL_SECONDS", "43200"))
+if DB_SESSION_TTL_SECONDS <= 0:
+    raise ValueError("DB_SESSION_TTL_SECONDS must be greater than zero")
+
 _clients = {}
+_clients_lock = Lock()
 
 
 def make_client(username, password):
@@ -46,17 +53,46 @@ def make_client(username, password):
 
 def save_client(session_id, client):
     close_client(session_id)
-    _clients[session_id] = client
+    with _clients_lock:
+        _clients[session_id] = (client, monotonic())
 
 
 def get_database(session_id):
-    client = _clients.get(session_id)
+    expire_clients()
+    with _clients_lock:
+        entry = _clients.get(session_id)
+    if entry is None:
+        raise KeyError("Database session is missing or expired")
+    client, _ = entry
     return client.myDatabase
 
 
+def expire_clients():
+    now = monotonic()
+    with _clients_lock:
+        expired_ids = [
+            session_id
+            for session_id, (_, created_at) in _clients.items()
+            if now - created_at >= DB_SESSION_TTL_SECONDS
+        ]
+        expired_clients = [
+            _clients.pop(session_id)[0] for session_id in expired_ids
+        ]
+    for client in expired_clients:
+        client.close()
+
+
+def has_client(session_id):
+    expire_clients()
+    with _clients_lock:
+        return session_id in _clients
+
+
 def close_client(session_id):
-    client = _clients.pop(session_id, None)
-    if client is not None:
+    with _clients_lock:
+        entry = _clients.pop(session_id, None)
+    if entry is not None:
+        client, _ = entry
         client.close()
 
 

@@ -44,6 +44,14 @@ cp .env.example .env
 python app.py
 ```
 
+Database client sessions expire after `DB_SESSION_TTL_SECONDS` seconds. The
+default is 60 seconds for testing; set it to `43200` for a 12-hour lifetime.
+Expired clients are closed on the next request, and the user must log in again.
+Client sessions are held in process memory, so restarting or redeploying the app
+also clears them; a browser with a stale session will be sent to the login page.
+Each worker has its own in-memory sessions, so multi-worker deployments require
+a shared session/client design to avoid requests landing on a different worker.
+
 For production, run behind HTTPS with a WSGI server such as Gunicorn:
 
 ```bash
