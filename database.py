@@ -17,7 +17,7 @@ from update_mapping import update_mapping
 
 load_dotenv()
 
-DB_SESSION_TTL_SECONDS = int(os.getenv("DB_SESSION_TTL_SECONDS", "60"))
+DB_SESSION_TTL_SECONDS = int(os.getenv("DB_SESSION_TTL_SECONDS", "43200"))
 if DB_SESSION_TTL_SECONDS <= 0:
     raise ValueError("DB_SESSION_TTL_SECONDS must be greater than zero")
 
