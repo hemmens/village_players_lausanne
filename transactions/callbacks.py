@@ -2,9 +2,11 @@ import pandas as pd
 from datetime import date, datetime, timedelta
 
 from current_role import current_role
-from dash import Input, Output, State, dcc, no_update
+from dash import Input, Output, State, ctx, dcc, no_update
 from database import get_members, get_names, get_productions
-from transactions.database import get_recipients, get_transactions, insert_transaction
+from transactions.database import (
+    get_nonperson_payees, get_recipients, get_transactions, insert_transaction, prefill_description
+)
 from update_mapping import grey_out
 from variables import BANK_COST, MEMBER_COST, STORAGE_COST, STORAGE_OWNER
 
@@ -119,10 +121,14 @@ def register_transactions_insert_callbacks(app, server):
 
     @app.callback(
         Output('a-transactions-recipient', 'options'),
-        Input('a-transactions-loaded', 'data'),
+        Input('a-transactions-recipient-type', 'value'),
     )
-    def update_recipient(loaded):
-        return get_names(add_empty=True) + get_productions()
+    def update_recipient(r_type):
+        if r_type == 'From Database':
+            return get_names(add_empty=True) + get_productions()
+        if r_type == 'Previous Payee':
+            return get_nonperson_payees()
+        return []
 
     @app.callback(
         Output('a-transactions-renew', 'options'),
@@ -173,68 +179,100 @@ def register_transactions_insert_callbacks(app, server):
         return None
 
     @app.callback(
-        Output('a-transactions-recipient', 'disabled'),
+        Output('a-transactions-description', 'value'),
+        Input('a-transactions-recipient', 'value'),
+    )
+    def set_description(recipient):
+        return prefill_description(recipient)
+
+    @app.callback(
+        Output('a-transactions-recipient-type', 'disabled'),
         Input('a-transactions-loaded', 'data'),
         Input('a-transactions-type', 'value'),
-        Input('a-transactions-recipient-text', 'value'),
+        Input('a-transactions-amount', 'value'),
     )
-    def disable_recipient(loaded, t_type, recipient):
-        return not bool(t_type) or bool(recipient) or (t_type == 'Membership Subscription')
+    def disable_recipient_type(loaded, t_type, amount):
+        return not bool(t_type) or (t_type == 'Membership Subscription' and amount is not None and amount > 0)
+
+    @app.callback(
+        Output('a-transactions-recipient-type', 'style'),
+        Input('a-transactions-loaded', 'data'),
+        Input('a-transactions-type', 'value'),
+        Input('a-transactions-amount', 'value'),
+    )
+    def greyout_recipient_type(loaded, t_type, amount):
+        return grey_out if (
+            not bool(t_type) or (t_type == 'Membership Subscription' and amount is not None and amount > 0)
+        ) else {}
+
+    @app.callback(
+        Output('a-transactions-recipient-type', 'value'),
+        Input('a-transactions-loaded', 'data'),
+        Input('a-transactions-type', 'value'),
+        Input('a-transactions-amount', 'value'),
+    )
+    def empty_recipient_type(loaded, t_type, amount):
+        if t_type == 'Storage':
+            return 'New Payee'
+        if (
+            not bool(t_type)
+            or (t_type == 'Membership Subscription' and amount is not None and amount > 0)
+        ):
+            return ''
+        return no_update
+
+    @app.callback(
+        Output('a-transactions-recipient', 'disabled'),
+        Input('a-transactions-recipient-type', 'value'),
+    )
+    def disable_recipient(r_type):
+        return not bool(r_type) or (r_type == 'New Payee')
 
     @app.callback(
         Output('a-transactions-recipient', 'style'),
-        Input('a-transactions-loaded', 'data'),
-        Input('a-transactions-type', 'value'),
-        Input('a-transactions-recipient-text', 'value'),
+        Input('a-transactions-recipient-type', 'value'),
     )
-    def greyout_recipient(loaded, t_type, recipient):
+    def greyout_recipient(r_type):
         return grey_out if (
-            not bool(t_type) or bool(recipient) or (t_type == 'Membership Subscription')
+            not bool(r_type) or (r_type == 'New Payee')
         ) else {}
 
     @app.callback(
         Output('a-transactions-recipient', 'value'),
-        Input('a-transactions-loaded', 'data'),
-        Input('a-transactions-type', 'value'),
-        Input('a-transactions-recipient-text', 'value'),
+        Input('a-transactions-recipient-type', 'value'),
     )
-    def empty_recipient(loaded, t_type, recipient):
+    def empty_recipient(r_type):
         return None if (
-            not bool(t_type) or bool(recipient) or (t_type == 'Membership Subscription')
+            not bool(r_type) or (r_type == 'New Payee')
         ) else no_update
 
     @app.callback(
         Output('a-transactions-recipient-text', 'disabled'),
-        Input('a-transactions-loaded', 'data'),
-        Input('a-transactions-type', 'value'),
-        Input('a-transactions-recipient', 'value'),
+        Input('a-transactions-recipient-type', 'value'),
     )
-    def disable_recipient_text(loaded, t_type, recipient):
-        return not bool(t_type) or bool(recipient) or (t_type == 'Membership Subscription')
+    def disable_recipient_text(r_type):
+        return not bool(r_type) or (r_type != 'New Payee')
 
     @app.callback(
         Output('a-transactions-recipient-text', 'style'),
-        Input('a-transactions-loaded', 'data'),
-        Input('a-transactions-type', 'value'),
-        Input('a-transactions-recipient', 'value'),
+        Input('a-transactions-recipient-type', 'value'),
     )
-    def greyout_recipient_text(loaded, t_type, recipient):
+    def greyout_recipient_text(r_type):
         return grey_out if (
-            not bool(t_type) or bool(recipient) or (t_type == 'Membership Subscription')
+            not bool(r_type) or (r_type != 'New Payee')
         ) else {}
 
     @app.callback(
         Output('a-transactions-recipient-text', 'value'),
-        Input('a-transactions-loaded', 'data'),
-        Input('a-transactions-type', 'value'),
-        Input('a-transactions-recipient', 'value'),
+        Input('a-transactions-recipient-type', 'value'),
+        State('a-transactions-type', 'value'),
     )
-    def empty_recipient_text(loaded, t_type, recipient):
+    def empty_recipient_text(r_type, t_type):
         if t_type == 'Storage':
             return STORAGE_OWNER
-        return None if (
-            not bool(t_type) or bool(recipient) or (t_type == 'Membership Subscription')
-        ) else no_update
+        if not bool(r_type) or (r_type != 'New Payee'):
+            return None
+        return no_update
 
     @app.callback(
         Output('a-transactions-production', 'disabled'),
@@ -269,31 +307,48 @@ def register_transactions_insert_callbacks(app, server):
             Output(f'a-transactions-{field}', 'disabled'),
             Input('a-transactions-loaded', 'data'),
             Input('a-transactions-type', 'value'),
+            Input('a-transactions-amount', 'value'),
             Input('a-transactions-existing', 'value'),
         )
-        def disable_member_field(loaded, t_type, existing):
-            return not bool(t_type) or bool(existing) or (t_type != 'Membership Subscription')
+        def disable_member_field(loaded, t_type, amount, existing):
+            return (
+                not bool(t_type)
+                or bool(existing)
+                or (t_type != 'Membership Subscription')
+                or (amount is None)
+                or (amount <= 0)
+            )
 
         @app.callback(
             Output(f'a-transactions-{field}', 'style'),
             Input('a-transactions-loaded', 'data'),
             Input('a-transactions-type', 'value'),
+            Input('a-transactions-amount', 'value'),
             Input('a-transactions-existing', 'value'),
         )
-        def greyout_member_field(loaded, t_type, existing):
+        def greyout_member_field(loaded, t_type, amount, existing):
             return grey_out if (
-                not bool(t_type) or bool(existing) or (t_type != 'Membership Subscription')
+                not bool(t_type)
+                or bool(existing)
+                or (t_type != 'Membership Subscription')
+                or (amount is None)
+                or (amount <= 0)
             ) else {}
 
         @app.callback(
             Output(f'a-transactions-{field}', 'value'),
             Input('a-transactions-loaded', 'data'),
             Input('a-transactions-type', 'value'),
+            Input('a-transactions-amount', 'value'),
             Input('a-transactions-existing', 'value'),
         )
-        def empty_member_field(loaded, t_type, existing):
+        def empty_member_field(loaded, t_type, amount, existing):
             return None if (
-                not bool(t_type) or bool(existing) or (t_type != 'Membership Subscription')
+                not bool(t_type)
+                or bool(existing)
+                or (t_type != 'Membership Subscription')
+                or (amount is None)
+                or (amount <= 0)
             ) else no_update
 
     @app.callback(
@@ -400,26 +455,28 @@ def register_transactions_insert_callbacks(app, server):
     @app.callback(
         Output('a-transactions-message', 'children'),
         Input('a-transactions-insert', 'n_clicks'),
-        State('a-transactions-type', 'value'),
-        State('a-transactions-date', 'date'),
-        State('a-transactions-amount', 'value'),
-        State('a-transactions-description', 'value'),
-        State('a-transactions-recipient', 'value'),
-        State('a-transactions-recipient-text', 'value'),
-        State('a-transactions-member-type', 'value'),
-        State('a-transactions-season', 'value'),
-        State('a-transactions-renew', 'value'),
-        State('a-transactions-new-1', 'value'),
-        State('a-transactions-new-2', 'value'),
-        State('a-transactions-new-3', 'value'),
-        State('a-transactions-existing', 'value'),
-        State('a-transactions-production', 'value'),
+        Input('a-transactions-type', 'value'),
+        Input('a-transactions-date', 'date'),
+        Input('a-transactions-amount', 'value'),
+        Input('a-transactions-description', 'value'),
+        Input('a-transactions-recipient', 'value'),
+        Input('a-transactions-recipient-text', 'value'),
+        Input('a-transactions-member-type', 'value'),
+        Input('a-transactions-season', 'value'),
+        Input('a-transactions-renew', 'value'),
+        Input('a-transactions-new-1', 'value'),
+        Input('a-transactions-new-2', 'value'),
+        Input('a-transactions-new-3', 'value'),
+        Input('a-transactions-existing', 'value'),
+        Input('a-transactions-production', 'value'),
         prevent_initial_call=True
     )
     def new_transaction(n_clicks, t_type, date, amount, description, recipient, recipient_text,
                             m_type, season, renew, new_1, new_2, new_3, existing, production_id):
-        return insert_transaction(t_type, date, amount, description, recipient, recipient_text,
+        if ctx.triggered_id == "a-transactions-insert":
+            return insert_transaction(t_type, date, amount, description, recipient, recipient_text,
                             m_type, season, renew, new_1, new_2, new_3, existing, production_id)
+        return None
 
 
 # def register_transactions_update_callbacks(app, server):

@@ -1,4 +1,4 @@
-from dash import Input, Output, State, ctx
+from dash import Input, Output, ctx
 
 from castcrew.database import delete_castcrew, get_castcrew, insert_castcrew, update_castcrew
 from current_role import current_role
@@ -45,15 +45,17 @@ def register_castcrew_insert_callbacks(app, server):
     @app.callback(
         Output('a-castcrew-message', 'children'),
         Input('a-castcrew-insert', 'n_clicks'),
-        State('a-castcrew-person', 'value'),
-        State('a-castcrew-production', 'value'),
-        State('a-castcrew-position', 'value'),
-        State('a-castcrew-role-name', 'value'),
-        State('a-castcrew-list-rank', 'value'),
+        Input('a-castcrew-person', 'value'),
+        Input('a-castcrew-production', 'value'),
+        Input('a-castcrew-position', 'value'),
+        Input('a-castcrew-role-name', 'value'),
+        Input('a-castcrew-list-rank', 'value'),
         prevent_initial_call=True
     )
     def new_castcrew(n_clicks, person_id, production_id, role, role_name, list_rank):
-        return insert_castcrew(person_id, production_id, role, role_name, list_rank)
+        if ctx.triggered_id == 'a-castcrew-insert':
+            return insert_castcrew(person_id, production_id, role, role_name, list_rank)
+        return None
 
 
 def register_castcrew_update_callbacks(app, server):
@@ -113,9 +115,9 @@ def register_castcrew_update_callbacks(app, server):
         Output('u-castcrew-message', 'children'),
         Input('u-castcrew-update', 'n_clicks'),
         Input('u-castcrew-delete', 'n_clicks'),
-        State('u-castcrew-select', 'value'),
-        State('u-castcrew-role-name', 'value'),
-        State('u-castcrew-list-rank', 'value'),
+        Input('u-castcrew-select', 'value'),
+        Input('u-castcrew-role-name', 'value'),
+        Input('u-castcrew-list-rank', 'value'),
         prevent_initial_call=True
     )
     def change_castcrew_details(u_clicks, d_clicks, role_id, name, list_rank):
@@ -124,3 +126,5 @@ def register_castcrew_update_callbacks(app, server):
 
         if ctx.triggered_id == "u-castcrew-delete":
             return delete_castcrew(role_id)
+
+        return None

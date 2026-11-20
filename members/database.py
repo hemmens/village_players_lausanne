@@ -114,6 +114,9 @@ def get_member_check(first_name, surname, email, season):
 
         return f"{member.full_name.title()} is a {season} member ({member_type})"
 
+    if member.ratio < 0.5:
+        return "This name does not match any members for this season"
+
     if email:
         members = members[members.email == email]
         if members.shape[0] == 0:
@@ -140,3 +143,42 @@ def get_member_check(first_name, surname, email, season):
                 """
 
     return "Please provide an email address for additional verification"
+
+
+def insert_member(m_type, season, person):
+    if not has_request_context():
+        return ""
+
+    if not m_type or not season or not person:
+        return "Type, season, and person are required"
+
+    person_id = person.split('|')[0]
+    try:
+        person_id = ObjectId(person_id)
+    except Exception as e:
+        return f"Invalid person ID: {e}"
+
+    member_payload = {
+        'season': season,
+        'person': person_id,
+    }
+    
+    db = get_database(session["db_session_id"])
+
+    if db.members.find_one(member_payload):
+        return "Member already exists"
+
+    if m_type == 'Honorary':
+        member_payload['type'] = 'Honorary'
+        member_payload['carry_over'] = False
+    elif m_type == 'Carry Over':
+        member_payload['type'] = 'Full'
+        member_payload['carry_over'] = True
+    else:
+        return "Type not recognised"
+
+    new_member = db.members.insert_one(member_payload)
+    if bool(new_member):
+        return f"New member {new_member.inserted_id}"
+
+    return "Failed to add new member"
