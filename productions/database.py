@@ -55,51 +55,54 @@ def get_production_details(production_id):
     if "db_session_id" not in session.keys():
         return pd.DataFrame().to_dict('records')
 
+    try:
+        production_id = ObjectId(production_id)
+    except Exception as e:
+        return f"Invalid production ID: {e}"
+
     db = get_database(session["db_session_id"])
 
-    festival = db.festivals.find_one({'_id': ObjectId(production_id)})
-    if festival:
-        productions = db.productions.find({'festival': ObjectId(production_id)})
-        return pd.DataFrame(
-            [
-                {'detail': 'Title', 'info': festival['title']},
-                {'detail': 'Opening Date', 'info': festival['open_date'].date().strftime('%d %B %Y')},
-                {'detail': 'Closing Date', 'info': festival['close_date'].date().strftime('%d %B %Y')},
-                {'detail': 'Venue', 'info': festival.get('venue', '')}
-            ] + [
-                {'detail': 'Play', 'info': f"{production['title']} by {production['author']}"}
-                for production in productions
-            ]
-        ).to_dict('records')
+    production = db.productions.find_one({'_id': production_id})
+    is_production = bool(production)
+    if not is_production:
+        production = db.festivals.find_one({'_id': production_id})
 
-    production = db.productions.find_one({'_id': ObjectId(production_id)})
-    if not production:
+    if not bool(production):
         return pd.DataFrame().to_dict('records')
-
-    row_data = [
-        {'detail': 'Title', 'info': production['title']},
-        {'detail': 'Author', 'info': production.get('author', '')},
-    ]
-
-    festival_name = None
+    
     if production.get('festival'):
-        production = db.festivals.find_one({'_id': production['festival']})
-        festival_name = production['title']
+        festival = db.festivals.find_one({'_id': production['festival']})
+    else:
+        festival = None
 
-    row_data += [
-        {'detail': 'Opening Date', 'info': production['open_date'].date().strftime('%d %B %Y')},
-        {'detail': 'Closing Date', 'info': production['close_date'].date().strftime('%d %B %Y')},
-        {'detail': 'Venue', 'info': production.get('venue', '')}
-    ]
-    if festival_name is not None:
-        row_data.append({'detail': 'Festival', 'info': festival_name})
+    row_data = [{'detail': 'Title', 'info': production['title']}]
 
-    castcrew = pd.DataFrame(db.castcrew.find({'production': ObjectId(production_id)}))
+    if is_production:
+        row_data.append({'detail': 'Author', 'info': production.get('author', '')})
+
+    castcrew = pd.DataFrame(db.castcrew.find({'production': production_id}))
+
+    if bool(festival):
+        row_data.append({'detail': 'Opening Date', 'info': festival['open_date'].date().strftime('%d %B %Y')})
+        row_data.append({'detail': 'Closing Date', 'info': festival['close_date'].date().strftime('%d %B %Y')})
+        row_data.append({'detail': 'Venue', 'info': festival.get('venue', '')})
+        row_data.append({'detail': 'Festival', 'info': festival['title']})
+        festival_castcrew = pd.DataFrame(db.castcrew.find({'production': festival['_id']}))
+        castcrew = pd.concat([castcrew, festival_castcrew])
+    else:
+        row_data.append({'detail': 'Opening Date', 'info': production['open_date'].date().strftime('%d %B %Y')})
+        row_data.append({'detail': 'Closing Date', 'info': production['close_date'].date().strftime('%d %B %Y')})
+        row_data.append({'detail': 'Venue', 'info': production.get('venue', '')})
+        if not is_production:
+            productions = db.productions.find({'festival': production_id})
+            for prod in productions:
+                row_data.append({'detail': 'Play', 'info': f"{prod['title']} by {prod['author']}"})
+
     if castcrew.shape[0]:
         castcrew.role = castcrew.role.astype('category')
         castcrew.role = castcrew.role.cat.set_categories(ROLE_TYPES)
         if 'list_rank' not in castcrew.columns:
-            castcrew['list_rank'] = 0
+            castcrew['list_rank'] = pd.NA
         castcrew.sort_values(['role', 'list_rank'], inplace=True)
         for _, participant in castcrew.iterrows():
             role = (

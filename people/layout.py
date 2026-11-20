@@ -13,9 +13,9 @@ people_insert_layout = [
     ),
     html.Div(
         [
-            html.Label("First Name: "),
+            html.Label("First Name (required): "),
             dcc.Input(id='a-people-first-name', type='text'),
-            html.Label("Surname: "),
+            html.Label("Surname (required): "),
             dcc.Input(id='a-people-surname', type='text'),
             html.Label("Address (first line): "),
             dcc.Input(id='a-people-address', type='text'),

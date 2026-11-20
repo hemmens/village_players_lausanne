@@ -1,8 +1,8 @@
 import pandas as pd
 import re
-from datetime import date
 
 from bson.objectid import ObjectId
+from dash import no_update
 from flask import session
 
 from database import convert_date, extract_name, get_database, get_new_ref, handle_decimal
@@ -10,7 +10,7 @@ from database import convert_date, extract_name, get_database, get_new_ref, hand
 
 def get_recipients():
     db = get_database(session["db_session_id"])
-    transactions = pd.DataFrame(db.transactions.find())
+    transactions = pd.DataFrame(db.transactions.find({'Recipient': {'$ne' : None}}))
     people = pd.DataFrame(db.people.find()).set_index('_id')
     transactions = transactions.join(people, 'Recipient')
     transactions['label'] = transactions.apply(
@@ -36,6 +36,30 @@ def get_recipients():
     )
     transactions = transactions[['label', 'value']].dropna().drop_duplicates().sort_values('label')
     return transactions.to_dict('records')
+
+
+def get_nonperson_payees():
+    db = get_database(session["db_session_id"])
+    transactions = pd.DataFrame(db.transactions.find({'Recipient': {'$ne' : None}}))
+    recipients = transactions.Recipient.drop_duplicates()
+    recipients = recipients[recipients.apply(lambda r: type(r) == str)]
+    recipients.sort_values(inplace=True)
+    return [''] + recipients.to_list()
+
+
+def prefill_description(payee):
+    if not bool(payee):
+        return no_update
+    person_id = payee.split('|')[0]
+    payee = payee if re.fullmatch(r"[0-9a-f]{24}", person_id) is None else ObjectId(person_id)
+    db = get_database(session["db_session_id"])
+    transactions = pd.DataFrame(db.transactions.find({'Recipient': payee}))
+    if transactions.empty:
+        return no_update
+    descriptions = transactions.Description.drop_duplicates()
+    if descriptions.shape[0] == 1:
+        return descriptions.iloc[0]
+    return no_update
 
 
 def get_transactions(t_type, start_date, end_date, recipient, production):
@@ -218,7 +242,7 @@ def insert_member(date, amount, mbr_type, season, mbr_renew,
 
 
 def insert_misc_transaction(
-    t_type, date, amount, description, recipient, recipient_text, production_id
+    t_type, date, amount, description=None, recipient=None, recipient_text=None, production_id=None
 ):
     db = get_database(session["db_session_id"])
     payload = {
@@ -230,7 +254,11 @@ def insert_misc_transaction(
     if recipient_text:
         payload['Recipient'] = recipient_text
     elif recipient:
-        payload['Recipient'] = ObjectId(recipient.split('|')[0])
+        person_id = recipient.split('|')[0]
+        recipient = (
+            recipient if re.fullmatch(r"[0-9a-f]{24}", person_id) is None else ObjectId(person_id)
+        )
+        payload['Recipient'] = recipient
     if description:
         payload['Description'] = description
     if production_id:
@@ -260,7 +288,7 @@ def insert_storage(date, amount, recipient_text):
     return f"New transaction: {transaction_payload['Reference']}"
 
 
-def insert_bank_charge(date, amount):
+def insert_bank_charge(date, amount, description=None):
     if not date or not amount:
         return "Date and Amount required"
 
@@ -272,6 +300,8 @@ def insert_bank_charge(date, amount):
         'Amount': handle_decimal(amount),
         'Type': 'Bank Charges',
     }
+    if bool(description):
+        transaction_payload['Description'] = description
 
     db.transactions.insert_one(transaction_payload)
 
@@ -285,6 +315,11 @@ def insert_transaction(t_type, date, amount, description, recipient, recipient_t
         return "Type, Date, and Amount are required."
 
     if t_type == 'Membership Subscription':
+        if amount < 0:
+            return insert_misc_transaction(
+                t_type, date, amount, description=description,
+                recipient=recipient, recipient_text=recipient_text
+            )
         return insert_member(
             date, amount, mbr_type, season, mbr_renew,
             mbr_new_1, mbr_new_2, mbr_new_3, mbr_existing
@@ -296,6 +331,6 @@ def insert_transaction(t_type, date, amount, description, recipient, recipient_t
     elif t_type == 'Storage':
         return insert_storage(date, amount, recipient_text)
     elif t_type == 'Bank Charges':
-        return insert_bank_charge(date, amount)
+        return insert_bank_charge(date, amount, description=description)
 
     return "Transaction Type not recognised"

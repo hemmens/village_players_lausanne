@@ -47,7 +47,46 @@ members_lookup_layout = [
         id='f-member-access',
         hidden=True
     ),
+    html.Div(
+        [
+            html.A(
+                html.Button("Insert", id='f-member-insert'), href='/members/insert'
+            ),
+        ],
+        id='f-member-treasurer-access',
+        hidden=True
+    ),
     html.A(
         html.Button("Home", id='f-member-home'), href='/'
+    ),
+]
+
+members_insert_layout = [
+    dcc.Store(id='a-member-loaded', data=True),
+    dcc.Store(id='a-member-role', storage_type='session'),
+    html.H1('Village Players Database Interface'),
+    html.H2('Members - Insert'),
+    html.Div(
+        "Treasurer access only", id='a-member-no-access', hidden=False
+    ),
+    html.Div(
+        [
+            html.Label("Select Type: "),
+            dcc.Dropdown(id='a-member-type', options=['Carry Over', 'Honorary']),
+            html.Label("Select Season: "),
+            dcc.Dropdown(id='a-member-season', options=SEASONS, value=SEASONS[0]),
+            html.Label("Select Person: "),
+            dcc.Dropdown(id='a-member-person', options=[]),
+            html.Div(id='a-member-message'),
+            html.Button("Insert New Member", id='a-member-insert'),
+            html.A(
+                html.Button("Lookup", id='f-member-lookup'), href='/members/lookup'
+            ),
+        ],
+        id='a-member-access',
+        hidden=True
+    ),
+    html.A(
+        html.Button("Home", id='a-member-home'), href='/'
     ),
 ]

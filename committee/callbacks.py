@@ -1,4 +1,4 @@
-from dash import Input, Output, State, ctx
+from dash import Input, Output, ctx
 
 from committee.database import (
     delete_committee_member, get_committee_list, get_committee_positions,
@@ -64,15 +64,17 @@ def register_committee_insert_callbacks(app, server):
     @app.callback(
         Output('a-committee-message', 'children'),
         Input('a-committee-insert', 'n_clicks'),
-        State('a-committee-person', 'value'),
-        State('a-committee-season', 'value'),
-        State('a-committee-position', 'value'),
-        State('a-committee-list-rank', 'value'),
+        Input('a-committee-person', 'value'),
+        Input('a-committee-season', 'value'),
+        Input('a-committee-position', 'value'),
+        Input('a-committee-list-rank', 'value'),
         prevent_initial_call=True
     )
     def new_committee_member(n_clicks, person, season, position, list_rank):
-        person_id = person.split('|')[0] if person else None
-        return insert_committee_member(person_id, season, position, list_rank)
+        if ctx.triggered_id == 'a-committee-insert':
+            person_id = person.split('|')[0] if person else None
+            return insert_committee_member(person_id, season, position, list_rank)
+        return None
 
 
 def register_committee_update_callbacks(app, server):
@@ -118,8 +120,8 @@ def register_committee_update_callbacks(app, server):
         Output('u-committee-message', 'children'),
         Input('u-committee-update', 'n_clicks'),
         Input('u-committee-delete', 'n_clicks'),
-        State('u-committee-position', 'value'),
-        State('u-committee-list-rank', 'value'),
+        Input('u-committee-position', 'value'),
+        Input('u-committee-list-rank', 'value'),
         prevent_initial_call=True
     )
     def change_committee_member(u_clicks, d_clicks, position, list_rank):
@@ -128,3 +130,5 @@ def register_committee_update_callbacks(app, server):
 
         if ctx.triggered_id == "u-committee-delete":
             return delete_committee_member(position)
+
+        return None

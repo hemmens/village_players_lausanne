@@ -10,7 +10,7 @@ def insert_person(first_name, surname, address, postcode, address_private, home_
         return ""
 
     if not first_name or not surname:
-        return "First name and surname are required." # {"error": "Person, season, and position are required."}, 400
+        return "First name and surname are required"
 
     person_payload = {
         'first_name': first_name,
@@ -61,12 +61,12 @@ def update_person(person_id, address, postcode, address_private, home_phone,
         return ""
 
     if not person_id:
-        return "Person ID is required." # {"error": "Committee member ID is required."}, 400
+        return "Person ID is required"
 
     try:
         person_id = ObjectId(person_id)
     except Exception as e:
-        return f"Invalid person ID: {e}" # {"error": f"Invalid committee member ID: {e}"}, 400
+        return f"Invalid person ID: {e}"
 
     update_payload = {
         '$set': {},

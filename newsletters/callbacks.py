@@ -1,4 +1,4 @@
-from dash import Input, Output, State, ctx
+from dash import Input, Output, ctx
 
 from current_role import current_role
 from database import update_form_fill_in_value

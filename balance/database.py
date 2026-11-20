@@ -36,6 +36,8 @@ def get_balance(months, years, start_date, end_date):
     balance = balance[['month', 'year', 'amount', 'difference']]
 
     balance.month = balance.month.map(MONTHS)
+    balance.month = balance.apply(lambda row: f"{row.month} {row.year}", axis=1)
+    balance.drop('year', axis=1, inplace=True)
     for col in ['amount', 'difference']:
         balance[col] = balance[col].apply(lambda x: f'{x:.2f}')
 

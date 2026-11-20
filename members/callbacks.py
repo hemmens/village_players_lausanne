@@ -2,9 +2,9 @@ import pandas as pd
 from datetime import datetime
 
 from current_role import current_role
-from dash import Input, Output, State, dcc
+from dash import Input, Output, State, ctx, dcc
 from database import get_names
-from members.database import get_member_check, get_member_list
+from members.database import get_member_check, get_member_list, insert_member
 from variables import MEMBER_LIST_COLUMNS
 
 def register_member_lookup_callbacks(app, server):
@@ -28,6 +28,13 @@ def register_member_lookup_callbacks(app, server):
     )
     def update_types_label(role):
         return role not in {"Committee", "Treasurer"}
+    
+    @app.callback(
+        Output('f-member-treasurer-access', 'hidden'),
+        Input('f-member-role', 'data'),
+    )
+    def update_types_label(role):
+        return role != "Treasurer"
 
     @app.callback(
         Output('f-member-columns', 'value'),
@@ -104,3 +111,46 @@ def register_member_search_callbacks(app):
     )
     def check_member(n_clicks, first_name, surname, email, season):
         return get_member_check(first_name, surname, email, season)
+
+
+def register_member_insert_callbacks(app, server):
+    @app.callback(
+        Output('a-member-role', 'data'),
+        Input('a-member-loaded', 'data'),
+    )
+    def update_role(loaded):
+        return current_role(server)
+    
+    @app.callback(
+        Output('a-member-access', 'hidden'),
+        Input('a-member-role', 'data'),
+    )
+    def update_access_hidden(role):
+        return role != "Treasurer"
+    
+    @app.callback(
+        Output('a-member-no-access', 'hidden'),
+        Input('a-member-role', 'data'),
+    )
+    def update_no_access_hidden(role):
+        return role == "Treasurer"
+
+    @app.callback(
+        Output('a-member-person', 'options'),
+        Input('a-member-loaded', 'data'),
+    )
+    def update_names(loaded):
+        return get_names()
+
+    @app.callback(
+        Output('a-member-message', 'children'),
+        Input('a-member-insert', 'n_clicks'),
+        Input('a-member-type', 'value'),
+        Input('a-member-season', 'value'),
+        Input('a-member-person', 'value'),
+        prevent_initial_call=True
+    )
+    def new_member(n_clicks, m_type, season, person_id):
+        if ctx.triggered_id == 'a-member-insert':
+            return insert_member(m_type, season, person_id)
+        return None
