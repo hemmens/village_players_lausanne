@@ -3,6 +3,11 @@ import secrets
 from dotenv import load_dotenv
 from pathlib import Path
 
+APP_DIR = Path(__file__).resolve().parent
+ENV_FILE = APP_DIR / ".env"
+
+load_dotenv(dotenv_path=ENV_FILE, override=True)
+
 from dash import Dash
 from flask import Flask, redirect, render_template, request, session, url_for
 from pymongo.errors import PyMongoError
@@ -20,7 +25,9 @@ from committee.callbacks import (
 from committee.layout import (
     committee_insert_layout, committee_lookup_layout, committee_update_layout
 )
-from database import make_client, save_client, close_client
+from database import (
+    close_client, expire_clients, has_client, make_client, save_client,
+)
 from members.callbacks import register_member_lookup_callbacks, register_member_search_callbacks
 from members.layout import members_lookup_layout, members_search_layout
 from newsletters.callbacks import (
@@ -42,13 +49,19 @@ from productions.layout import (
 from transactions.callbacks import register_transactions_insert_callbacks, register_transactions_lookup_callbacks
 from transactions.layout import transactions_insert_layout, transactions_lookup_layout
 
-APP_DIR = Path(__file__).resolve().parent
-ENV_FILE = APP_DIR / ".env"
-
-load_dotenv(dotenv_path=ENV_FILE, override=True)
-
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "")
+
+
+@app.before_request
+def validate_database_session():
+    expire_clients()
+    db_session_id = session.get("db_session_id")
+    if db_session_id and not has_client(db_session_id):
+        session.clear()
+        if request.endpoint not in {"login", "public_login", "debug_login", "logout"}:
+            return redirect(url_for("login", expired=1))
+
 
 dashboards = {}
 for route in [
@@ -87,7 +100,12 @@ def set_debug_role():
 @app.route("/login", methods=["GET", "POST"])
 def login():
     if request.method == "GET":
-        return render_template("login.html")
+        error = (
+            "Your session expired or was reset. Please sign in again."
+            if request.args.get("expired") == "1"
+            else None
+        )
+        return render_template("login.html", error=error)
 
     username = request.form.get("username", "").strip()
     password = request.form.get("password", "")
