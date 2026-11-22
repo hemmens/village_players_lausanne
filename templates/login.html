@@ -12,6 +12,10 @@
     <p>Enter credentials for Committee access. You can also continue without credentials
         by returning to the index page.</p>
 
+    {% if error %}
+    <p role="alert">{{ error }}</p>
+    {% endif %}
+
     <form method="post" action="{{ url_for('login') }}">
         <label for="username">Username</label>
         <input
