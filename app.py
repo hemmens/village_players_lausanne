@@ -79,6 +79,10 @@ for route in [
         server=app,
         url_base_pathname=f"/{route}/",
         suppress_callback_exceptions=True,
+        external_stylesheets=[
+        "/static/bootstrap.css",
+        "/static/app.css",
+        ]
     )
 
 

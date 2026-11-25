@@ -4,12 +4,13 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
   <title>Village Players Database Interface</title>
+  <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
 </head>
 <body>
   <header>
     <strong>Village Players Database Interface</strong>
-    <span class="role">Access: {{ role }}</span>
+    <span class="role">Access level: {{ role }}</span>
     {% if role != "Awaiting Connection" %}
     <form method="post" action="{{ url_for('logout') }}">
       <button class="secondary" type="submit">Disconnect</button>
@@ -26,7 +27,7 @@
   <main>
     {% if config.DEBUG %}
     <section class="card">
-      <h1>Debug Role</h1>
+      <h3>Debug Role</h3>
       <form method="post" action="{{ url_for('set_debug_role') }}">
         <select name="role" onchange="this.form.submit()">
             <option value="Awaiting Connection" {% if role == "Awaiting Connection" %}selected{% endif %}>
@@ -50,25 +51,27 @@
     {% endif %}
 
     <section class="card">
-        {% if role == "Awaiting Connection" %}
-        <form method="post" action="{{ url_for('public_login') }}">
-        <button class="secondary" type="submit">Connect as Public</button>
-        </form>
-        <a class="button secondary" href="{{ url_for('login') }}">Sign in</a>
-        {% else %}
-        <a class="button secondary" href="/members/search/">Member Check</a>
-        <a class="button secondary" href="/productions/lookup/">Productions</a>
-        <a class="button secondary" href="/committee/lookup/">Committee</a>
-        <a class="button secondary" href="/newsletters/lookup/">Newsletters</a>
-        {% if role != "Public" %}
-        <a class="button secondary" href="/members/lookup/">Members</a>
-        <a class="button secondary" href="/castcrew/insert/">Cast & Crew</a>
-        <a class="button secondary" href="/people/update/">People</a>
-        <a class="button secondary" href="/balance/lookup/">Balances</a>
-        <a class="button secondary" href="/transactions/lookup/">Transactions</a>
-        {% endif %}
-        {% endif %}
-    </section>
+  <div class="button-group">
+    {% if role == "Awaiting Connection" %}
+    <form method="post" action="{{ url_for('public_login') }}">
+      <button class="secondary" type="submit">Connect as Public</button>
+    </form>
+    <a class="button secondary" href="{{ url_for('login') }}">Sign in</a>
+    {% else %}
+    <a class="button secondary" href="/members/search/">Member Check</a>
+    <a class="button secondary" href="/productions/lookup/">Productions</a>
+    <a class="button secondary" href="/committee/lookup/">Committee</a>
+    <a class="button secondary" href="/newsletters/lookup/">Newsletters</a>
+    {% if role != "Public" %}
+    <a class="button secondary" href="/members/lookup/">Members</a>
+    <a class="button secondary" href="/castcrew/insert/">Cast & Crew</a>
+    <a class="button secondary" href="/people/update/">People</a>
+    <a class="button secondary" href="/balance/lookup/">Balances</a>
+    <a class="button secondary" href="/transactions/lookup/">Transactions</a>
+    {% endif %}
+    {% endif %}
+  </div>
+</section>
 
     <div>
         <p>&copy; 2026 Christopher Hemmens</p>

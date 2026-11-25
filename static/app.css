@@ -7,7 +7,20 @@ header form { margin-left:auto; }
 .narrow { max-width:420px; margin:10vh auto; }
 label { display:block; margin:14px 0; }
 input { display:block; width:100%; box-sizing:border-box; padding:10px; margin-top:6px; }
-button, .button { display:inline-block; padding:10px 14px; border:1px solid #888; border-radius:8px; cursor:pointer; text-decoration:none; }
+button, .button { display:inline-block; padding:10px 14px; border:1px solid #888; border-radius:8px; cursor:pointer; text-decoration:none; margin-top:15px; margin-right:8px; }
 .secondary { opacity:.85; }
 .notice { padding:12px; border:1px solid #888; border-radius:8px; margin:12px 0; }
 pre { overflow:auto; white-space:pre-wrap; }
+.card > .button {
+  align-self: flex-start;
+  padding: 10px 14px;
+}
+.button-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
+.button-group form {
+  margin: 0;
+}
