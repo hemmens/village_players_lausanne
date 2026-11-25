@@ -28,8 +28,11 @@ from committee.layout import (
 from database import (
     close_client, expire_clients, has_client, make_client, save_client,
 )
-from members.callbacks import register_member_lookup_callbacks, register_member_search_callbacks
-from members.layout import members_lookup_layout, members_search_layout
+from members.callbacks import (
+    register_member_insert_callbacks,
+    register_member_lookup_callbacks, register_member_search_callbacks
+)
+from members.layout import members_insert_layout, members_lookup_layout, members_search_layout
 from newsletters.callbacks import (
     register_newsletters_lookup_callbacks, register_newsletters_insert_callbacks,
     register_newsletters_update_callbacks
@@ -65,7 +68,7 @@ def validate_database_session():
 
 dashboards = {}
 for route in [
-    'members/lookup', 'members/search',
+    'members/lookup', 'members/search', 'members/insert',
     'productions/lookup', 'productions/insert', 'productions/update',
     'committee/lookup', 'committee/insert', 'committee/update',
     'newsletters/lookup', 'newsletters/insert', 'newsletters/update',
@@ -234,6 +237,8 @@ dashboards['members/lookup'].layout = members_lookup_layout
 register_member_lookup_callbacks(dashboards['members/lookup'], app)
 dashboards['members/search'].layout = members_search_layout
 register_member_search_callbacks(dashboards['members/search'])
+dashboards['members/insert'].layout = members_insert_layout
+register_member_insert_callbacks(dashboards['members/insert'], app)
 dashboards['productions/lookup'].layout = productions_lookup_layout
 register_productions_lookup_callbacks(dashboards['productions/lookup'], app)
 dashboards['productions/insert'].layout = productions_insert_layout

@@ -3,6 +3,8 @@ import dash_ag_grid as dag
 
 from variables import MEMBER_TYPES, SEASONS, TRANSACTION_TYPES
 
+RECIPIENT_TYPES = ['', 'From Database', 'Previous Payee', 'New Payee']
+
 transactions_lookup_layout = [
     dcc.Store(id='f-transactions-loaded', data=True),
     dcc.Store(id='f-transactions-role', storage_type='session'),
@@ -68,17 +70,19 @@ transactions_insert_layout = [
     ),
     html.Div(
         [
-            html.Label("Transaction Type: "),
+            html.Label("Transaction Type (required): "),
             dcc.Dropdown(id='a-transactions-type', options=TRANSACTION_TYPES),
-            html.Label("Date: "),
+            html.Label("Date (required): "),
             dcc.DatePickerSingle(id='a-transactions-date'),
-            html.Label("Amount: "),
+            html.Label("Amount (required): "),
             dcc.Input(id='a-transactions-amount', type='number'),
             html.Label("Description: "),
             dcc.Input(id='a-transactions-description', type='text'),
+            html.Label("Recipient Type: "),
+            dcc.Dropdown(id='a-transactions-recipient-type', options=RECIPIENT_TYPES),
             html.Label("Recipient: "),
             dcc.Dropdown(id='a-transactions-recipient', options=[]),
-            html.Label("Recipient Text: "),
+            html.Label("Recipient (new payee, external): "),
             dcc.Input(id='a-transactions-recipient-text', type='text'),
             html.Label("Membership Type: "),
             dcc.Dropdown(id='a-transactions-member-type', options=[''] + MEMBER_TYPES),
@@ -99,7 +103,7 @@ transactions_insert_layout = [
             html.Div(id='a-transactions-message'),
             html.Button("Insert New Transaction", id='a-transactions-insert'),
             html.A(
-                html.Button("Lookup", id='f-transactions-lookup'), href='/transactions/lookup/'
+                html.Button("Lookup", id='a-transactions-lookup'), href='/transactions/lookup/'
             ),
             # html.A(
             #     html.Button("Update", id='a-transactions-update'), href='/transactions/update/'

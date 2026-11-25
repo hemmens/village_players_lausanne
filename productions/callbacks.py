@@ -143,18 +143,20 @@ def register_productions_insert_callbacks(app, server):
     @app.callback(
         Output('a-productions-message', 'children'),
         Input('a-productions-insert', 'n_clicks'),
-        State('a-productions-type', 'value'),
-        State('a-productions-name', 'value'),
-        State('a-productions-venue', 'value'),
-        State('a-productions-author', 'value'),
-        State('a-productions-open', 'date'),
-        State('a-productions-close', 'date'),
-        State('a-productions-festival', 'value'),
-        State('a-productions-poster-url', 'value'),
+        Input('a-productions-type', 'value'),
+        Input('a-productions-name', 'value'),
+        Input('a-productions-venue', 'value'),
+        Input('a-productions-author', 'value'),
+        Input('a-productions-open', 'date'),
+        Input('a-productions-close', 'date'),
+        Input('a-productions-festival', 'value'),
+        Input('a-productions-poster-url', 'value'),
         prevent_initial_call=True
     )
     def new_production(n_clicks, p_type, name, venue, author, open, close, festival, poster_url):
-        return insert_production(p_type, name, venue, author, open, close, festival, poster_url)
+        if ctx.triggered_id == 'a-productions-insert':
+            return insert_production(p_type, name, venue, author, open, close, festival, poster_url)
+        return None
 
 
 def register_productions_update_callbacks(app, server):
@@ -209,13 +211,13 @@ def register_productions_update_callbacks(app, server):
         Output('u-productions-message', 'children'),
         Input('u-productions-update', 'n_clicks'),
         Input('u-productions-delete', 'n_clicks'),
-        State('u-productions-select', 'value'),
-        State('u-productions-venue', 'value'),
-        State('u-productions-author', 'value'),
-        State('u-productions-open', 'date'),
-        State('u-productions-close', 'date'),
-        State('u-productions-festival', 'value'),
-        State('u-productions-poster-url', 'value'),
+        Input('u-productions-select', 'value'),
+        Input('u-productions-venue', 'value'),
+        Input('u-productions-author', 'value'),
+        Input('u-productions-open', 'date'),
+        Input('u-productions-close', 'date'),
+        Input('u-productions-festival', 'value'),
+        Input('u-productions-poster-url', 'value'),
         prevent_initial_call=True
     )
     def change_production_details(u_clicks, d_clicks, production_id, venue, author,
@@ -226,3 +228,5 @@ def register_productions_update_callbacks(app, server):
 
         if ctx.triggered_id == "u-productions-delete":
             return delete_production(production_id)
+
+        return None

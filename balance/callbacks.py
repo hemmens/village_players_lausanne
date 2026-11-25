@@ -1,4 +1,4 @@
-from dash import Input, Output, State
+from dash import Input, Output, ctx
 
 from balance.database import get_balance, insert_balance
 from current_role import current_role
@@ -40,7 +40,7 @@ def register_balance_lookup_callbacks(app, server):
         Input('f-balance-year', 'value'),
         Input('f-balance-start-date', 'date'),
         Input('f-balance-end-date', 'date'),
-        State('f-balance-role', 'data')
+        Input('f-balance-role', 'data')
     )
     def update_row_data_balance(loaded, month, year, start_date, end_date, role):
         if role in {'Committee', 'Treasurer'}:
@@ -74,10 +74,12 @@ def register_balance_insert_callbacks(app, server):
     @app.callback(
         Output('a-balance-message', 'children'),
         Input('a-balance-insert', 'n_clicks'),
-        State('a-balance-amount', 'value'),
-        State('a-balance-month', 'value'),
-        State('a-balance-year', 'value'),
+        Input('a-balance-amount', 'value'),
+        Input('a-balance-month', 'value'),
+        Input('a-balance-year', 'value'),
         prevent_initial_call=True
     )
     def new_balance(n_clicks, amount, month, year):
-        return insert_balance(amount, month, year)
+        if ctx.triggered_id == 'a-balance-insert':
+            return insert_balance(amount, month, year)
+        return None

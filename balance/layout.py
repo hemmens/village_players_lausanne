@@ -32,8 +32,7 @@ balance_lookup_layout = [
             dag.AgGrid(
                 id='f-balance-list',
                 columnDefs=[
-                    {'field': 'month', 'width': 150},
-                    {'field': 'year', 'width': 150},
+                    {'field': 'month', 'width': 200},
                     {'field': 'amount', 'width': 150},
                     {'field': 'difference', 'width': 150},
                 ]
