@@ -8,8 +8,10 @@ ENV_FILE = APP_DIR / ".env"
 
 load_dotenv(dotenv_path=ENV_FILE, override=True)
 
-from dash import Dash
-from flask import Flask, redirect, render_template, request, session, url_for
+from dash import Dash, html
+from flask import (
+    Flask, has_request_context, redirect, render_template, request, session, url_for
+)
 from pymongo.errors import PyMongoError
 
 from balance.callbacks import register_balance_insert_callbacks, register_balance_lookup_callbacks
@@ -51,6 +53,55 @@ from transactions.layout import transactions_insert_layout, transactions_lookup_
 
 app = Flask(__name__)
 app.secret_key = os.getenv("FLASK_SECRET_KEY", "")
+
+APP_TITLE = "Village Players Database Interface"
+
+## New code to display the header on all pages, including Dash ones.
+def display_role():
+    if not has_request_context():
+        return "Awaiting Connection"
+
+    role_key = "debug_role" if app.debug else "role"
+    return session.get(role_key, "Awaiting Connection")
+
+## Defines the layout across all Dash pages.
+def shared_dashboard_layout(content):
+    role = display_role()
+    page_content = [
+        child for child in content
+        if not (isinstance(child, html.H1) and child.children == APP_TITLE)
+    ]
+    header_children = [
+        html.Strong(APP_TITLE),
+        html.Span(f"Access level: {role}", className="role"),
+    ]
+    if role != "Awaiting Connection":
+        header_children.append(
+            html.Form(
+                html.Button("Disconnect", className="secondary", type="submit"),
+                action="/logout",
+                method="post",
+            )
+        )
+    ## Defines the footer also for all Dash pages.
+    return html.Div([
+        html.Header(header_children),
+        html.Main(page_content),
+        html.Footer([
+            html.P(["© 2026 Christopher Hemmens",
+            html.Img(
+                src="https://drive.google.com/thumbnail?id=1avcgzN3tllKY35SZXP_oIjC13x7Y_kmq",
+                alt="Village Players Logo",
+                width="100",
+                style={"float": "right"}
+            )
+        ]),
+            html.P(
+                "This app and the associated database were designed and developed "
+                "by Christopher Hemmens with support from Sorcha Walsh"
+            ),
+        ]),
+    ],className="app-layout")
 
 
 @app.before_request
@@ -109,7 +160,7 @@ def login():
             if request.args.get("expired") == "1"
             else None
         )
-        return render_template("login.html", error=error)
+        return render_template("login.html", error=error, role=display_role())
 
     username = request.form.get("username", "").strip()
     password = request.form.get("password", "")
@@ -122,7 +173,9 @@ def login():
         client = make_client(username, password)
     except PyMongoError:
         return render_template(
-            "login.html", error="Database connection unavailable."
+            "login.html",
+            error="Database connection unavailable.",
+            role=display_role(),
         ), 503
 
     # Replace any previous login/session state.
@@ -272,6 +325,10 @@ dashboards['transactions/insert'].layout = transactions_insert_layout
 register_transactions_insert_callbacks(dashboards['transactions/insert'], app)
 dashboards['transactions/lookup'].layout = transactions_lookup_layout
 register_transactions_lookup_callbacks(dashboards['transactions/lookup'], app)
+
+for dashboard in dashboards.values():
+    content = dashboard.layout
+    dashboard.layout = lambda content=content: shared_dashboard_layout(content)
 
 if __name__ == "__main__":
     # app.run(host="127.0.0.1", port=int(os.environ.get("PORT", "5000")), debug=False)

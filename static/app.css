@@ -1,24 +1,83 @@
-:root { font-family: system-ui, sans-serif; color-scheme: light dark;   --header-bg: var(--bs-primary);
-  --header-border: #1e2d3a;
-  --header-text: #fff;}
-  [data-bs-theme="dark"] {
+:root {
+  font-family: system-ui, sans-serif;
+  color-scheme: light dark;
+  --header-bg: var(--bs-primary);
+  --header-text: #fff;
+  --footer-bg: #e5eef7;
+  --footer-text: #000;
+}
+[data-bs-theme="dark"] {
   --header-bg: #171d23;
-  --header-border: #39434c;
+  --headerfooter-border: #39434c;
   --header-text: #f8f9fa;
+  --footer-bg: #8b8b8b;
+  --footer-text:#000;
 }
 
-body { max-width: 1000px; margin: 0 auto;padding: 0 24px;}
-header { display:flex; align-items:center; gap:16px; margin-bottom:24px; }
-header form { margin-left:auto; }
-.role { padding:4px 8px; border:1px solid #888; border-radius:999px; }
-.card { border:1px solid #888; border-radius:12px; padding:24px; margin:16px 0}
-.narrow { max-width:420px; margin:10vh auto; }
-label { display:block; margin:14px 0; }
-input { display:block; width:100%; box-sizing:border-box; padding:10px; margin-top:6px; }
-button, .button { display:inline-block; padding:10px 14px; border:1px solid #888; border-radius:8px; cursor:pointer; text-decoration:none; margin-top:15px; margin-right:8px; }
-.secondary { opacity:.85; }
-.notice { padding:12px; border:1px solid #888; border-radius:8px; margin:12px 0; }
-pre { overflow:auto; white-space:pre-wrap; }
+body {
+  max-width: 1000px;
+  margin: 0 auto;
+  padding: 0 24px;
+}
+header {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 24px;
+}
+header form {
+  margin-left: auto;
+}
+.role {
+  padding: 4px 8px;
+  border: 1px solid #888;
+  border-radius: 999px;
+}
+.card {
+  border: 1px solid #888;
+  border-radius: 12px;
+  padding: 24px;
+  margin: 16px 0;
+}
+.narrow {
+  max-width: 420px;
+  margin: 10vh auto;
+}
+label {
+  display: block;
+  margin: 14px 0;
+}
+input {
+  display: block;
+  width: 100%;
+  box-sizing: border-box;
+  padding: 10px;
+  margin-top: 6px;
+}
+button,
+.button {
+  display: inline-block;
+  padding: 10px 14px;
+  border: 1px solid #888;
+  border-radius: 8px;
+  cursor: pointer;
+  text-decoration: none;
+  margin-top: 15px;
+  margin-right: 8px;
+}
+.secondary {
+  opacity: 0.85;
+}
+.notice {
+  padding: 12px;
+  border: 1px solid #888;
+  border-radius: 8px;
+  margin: 12px 0;
+}
+pre {
+  overflow: auto;
+  white-space: pre-wrap;
+}
 .card > .button {
   align-self: flex-start;
   padding: 10px 14px;
@@ -32,32 +91,50 @@ pre { overflow:auto; white-space:pre-wrap; }
 .button-group form {
   margin: 0;
 }
-header{
-    margin-bottom:1vw;
-    padding: 12px 0;}
-footer{
-    margin-top:1vw;
-    padding: 12px 0;
+header {
+  margin-bottom: 1vw;
+  padding: 12px 0;
+  position: relative;
+  isolation: isolate;
+  color: var(--header-text);
 }
-header, footer{
-    position:relative;
-    isolation: isolate;
-    color: var(--header-text);
+footer {
+  margin-top: 1vw;
+  padding: 12px 0;
+  position: relative;
+  isolation: isolate;
+  color: var(--footer-text);
 }
-header::before, footer::before{
+
+header::before {
   position: absolute;
   z-index: -1;
-  inset:0 calc(50% - 50vw);
-  background-color: var(--header-bg);  content:"";
+  inset: 0 calc(50% - 50vw);
+  background-color: var(--header-bg);
+  content: "";
 }
-header::before{
-    border-bottom:solid 1px var(--header-border);
+header::before {
+  border-bottom: solid 1px var(--headerfooter-border);
 }
-footer::before{
-    border-top:solid 1px var(--header-border);
+footer::before {
+  position: absolute;
+  z-index: -1;
+  inset: 0 calc(50% - 50vw);
+  content: "";
+  background-color: var(--footer-bg);
+  border-top: solid 1px var(--headerfooter-border);
+}
+header > .secondary {
+  background-color: var(--header-bg);
+  color: var(--header-text);
+}
+/* This exists purely to keep the footer at the bottom of the page if the page is short.*/
+.app-layout {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
 
-}
-header>.secondary{
-    background-color: var(--header-bg);
-    color: var(--header-text);
+.app-layout main {
+  flex: 1;
 }

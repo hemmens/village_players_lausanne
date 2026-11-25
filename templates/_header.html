@@ -1,0 +1,10 @@
+<!--File to give access to the header across all pages.-->
+<header>
+  <strong>Village Players Database Interface</strong>
+  <span class="role">Access level: {{ role }}</span>
+  {% if role != "Awaiting Connection" %}
+  <form method="post" action="{{ url_for('logout') }}">
+    <button class="secondary" type="submit">Disconnect</button>
+  </form>
+  {% endif %}
+</header>

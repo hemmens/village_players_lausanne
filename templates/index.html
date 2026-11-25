@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="en" data-bs-theme="dark">
+<html lang="en">
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1">
@@ -7,16 +7,8 @@
   <link rel="stylesheet" href="{{ url_for('static', filename='bootstrap.css') }}">
   <link rel="stylesheet" href="{{ url_for('static', filename='app.css') }}">
 </head>
-<body>
-  <header>
-    <strong>Village Players Database Interface</strong>
-    <span class="role">Access level: {{ role }}</span>
-    {% if role != "Awaiting Connection" %}
-    <form method="post" action="{{ url_for('logout') }}">
-      <button class="secondary" type="submit">Disconnect</button>
-    </form>
-    {% endif %}
-  </header>
+<body class="app-layout">
+  {% include "_header.html" %}
 
   {% with messages = get_flashed_messages(with_categories=true) %}
     {% for category, message in messages %}
@@ -73,14 +65,9 @@
   </div>
 </section>
 
-    <footer>
-        <p>&copy; 2026 Christopher Hemmens</p>
-        <p>
-            This app and the associated database were designed and developed by Christopher
-            Hemmens with support from Sorcha Walsh
-        </p>
-      </footer>
   </main>
+
+  {% include "_footer.html" %}
 
 <!-- <script>
 document.querySelector("#load").addEventListener("click", async () => {
