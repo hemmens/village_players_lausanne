@@ -105,6 +105,8 @@ def register_people_update_callbacks(app, server):
         Input('u-people-update', 'n_clicks'),
         Input('u-people-delete', 'n_clicks'),
         Input('u-people-select', 'value'),
+        Input('u-people-first-name', 'value'),
+        Input('u-people-surname', 'value'),
         Input('u-people-address', 'value'),
         Input('u-people-postcode', 'value'),
         Input('u-people-address-private', 'value'),
@@ -119,13 +121,13 @@ def register_people_update_callbacks(app, server):
         Input('u-people-committee-email', 'value'),
         prevent_initial_call=True
     )
-    def change_person_details(u_clicks, d_clicks, person_id, address, postcode,
-            address_private, home_phone, home_phone_private, mobile, mobile_private,
+    def change_person_details(u_clicks, d_clicks, person_id, first_name, surname, address,
+            postcode, address_private, home_phone, home_phone_private, mobile, mobile_private,
             email, email_private, gender, gdpr, committee_email):
         if ctx.triggered_id == "u-people-update":
-            return update_person(person_id, address, postcode, address_private, home_phone,
-            home_phone_private, mobile, mobile_private, email, email_private, gender,
-            gdpr, committee_email)
+            return update_person(person_id, first_name, surname, address, postcode,
+            address_private, home_phone, home_phone_private, mobile, mobile_private, email,
+            email_private, gender, gdpr, committee_email)
 
         if ctx.triggered_id == "u-people-delete":
             return delete_person(person_id)

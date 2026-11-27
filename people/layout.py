@@ -78,6 +78,10 @@ people_update_layout = [
         [
             html.Label("Select Person to update: "),
             dcc.Dropdown(id='u-people-select', options=[], placeholder="Select a person"),
+            html.Label("First Name: "),
+            dcc.Input(id='u-people-first-name', type='text'),
+            html.Label("Surname: "),
+            dcc.Input(id='u-people-surname', type='text'),
             html.Label("Address (first line): "),
             dcc.Input(id='u-people-address', type='text'),
             html.Label("Postcode: "),

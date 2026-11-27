@@ -84,12 +84,15 @@ def insert_committee_member(person_id, season, position, list_rank):
     return f"New committee member: {str(new_committee_member.inserted_id)}"
 
 
-def update_committee_member(committee_id, list_rank):
+def update_committee_member(committee_id, position, list_rank):
     if not has_request_context():
         return ""
 
-    if not committee_id:
+    if not bool(committee_id):
         return "Committee member ID is required"
+
+    if not bool(position):
+        return "Position Title is required"
 
     try:
         ObjectId(committee_id)
@@ -97,7 +100,7 @@ def update_committee_member(committee_id, list_rank):
         return f"Invalid committee member ID: {e}"
 
     update_payload = {
-        '$set': {},
+        '$set': {'position': position},
         '$unset': {}
     }
 

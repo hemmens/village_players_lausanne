@@ -231,13 +231,16 @@ def insert_production(p_type, name, venue, author, open, close, festival_id, pos
 
 
 def update_production(
-        production_id, venue, author, open_date, close_date, festival_id, poster_url
+        production_id, title, venue, author, open_date, close_date, festival_id, poster_url
 ):
     if not has_request_context():
         return ""
 
-    if not production_id:
-        return "Production ID is required."
+    if not bool(production_id):
+        return "Production ID is required"
+
+    if not bool(title):
+        return "Title is required"
 
     try:
         production_id = ObjectId(production_id)
@@ -251,7 +254,7 @@ def update_production(
             return f"Invalid festival ID: {e}"
 
     update_payload = {
-        '$set': {},
+        '$set': {'title': title},
         '$unset': {}
     }
 

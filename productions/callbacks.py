@@ -212,6 +212,7 @@ def register_productions_update_callbacks(app, server):
         Input('u-productions-update', 'n_clicks'),
         Input('u-productions-delete', 'n_clicks'),
         Input('u-productions-select', 'value'),
+        Input('u-productions-title', 'value'),
         Input('u-productions-venue', 'value'),
         Input('u-productions-author', 'value'),
         Input('u-productions-open', 'date'),
@@ -220,10 +221,10 @@ def register_productions_update_callbacks(app, server):
         Input('u-productions-poster-url', 'value'),
         prevent_initial_call=True
     )
-    def change_production_details(u_clicks, d_clicks, production_id, venue, author,
+    def change_production_details(u_clicks, d_clicks, production_id, title, venue, author,
                               open_date, close_date, festival_id, poster_url):
         if ctx.triggered_id == "u-productions-update":
-            return update_production(production_id, venue, author,
+            return update_production(production_id, title, venue, author,
                               open_date, close_date, festival_id, poster_url)
 
         if ctx.triggered_id == "u-productions-delete":
