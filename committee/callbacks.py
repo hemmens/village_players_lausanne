@@ -121,12 +121,13 @@ def register_committee_update_callbacks(app, server):
         Input('u-committee-update', 'n_clicks'),
         Input('u-committee-delete', 'n_clicks'),
         Input('u-committee-position', 'value'),
+        Input('u-committee-position-title', 'value'),
         Input('u-committee-list-rank', 'value'),
         prevent_initial_call=True
     )
-    def change_committee_member(u_clicks, d_clicks, position, list_rank):
+    def change_committee_member(u_clicks, d_clicks, position, title, list_rank):
         if ctx.triggered_id == "u-committee-update":
-            return update_committee_member(position, list_rank)
+            return update_committee_member(position, title, list_rank)
 
         if ctx.triggered_id == "u-committee-delete":
             return delete_committee_member(position)

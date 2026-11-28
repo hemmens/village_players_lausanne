@@ -14,7 +14,7 @@ committee_lookup_layout = [
         id='f-committee-list',
         columnDefs=[
             {'field': 'season', 'headerName': 'Season', 'width': 150},
-            {'field': 'position', 'headerName': 'Position', 'width': 250},
+            {'field': 'position', 'headerName': 'Position', 'width': 300},
             {'field': 'full_name', 'headerName': 'Name', 'width': 250},
             {'field': 'committee_email', 'headerName': 'Email', 'width': 250},
         ]
@@ -87,6 +87,8 @@ committee_update_layout = [
             dcc.Dropdown(id='u-committee-season', options=SEASONS, value=SEASONS[0]),
             html.Label("Select Committee Position: "),
             dcc.Dropdown(id='u-committee-position', options=[]),
+            html.Label("Position Title: "),
+            dcc.Input(id='u-committee-position-title', type='text'),
             html.Label("List Rank (optional): "),
             dcc.Input(id='u-committee-list-rank', type='number'),
             html.Div(id='u-committee-message'),

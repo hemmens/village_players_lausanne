@@ -54,14 +54,17 @@ def insert_person(first_name, surname, address, postcode, address_private, home_
     return f"New person: {str(new_person.inserted_id)}"
 
 
-def update_person(person_id, address, postcode, address_private, home_phone,
-        home_phone_private, mobile, mobile_private, email, email_private, gender,
-        gdpr, committee_email):
+def update_person(person_id, first_name, surname, address, postcode, address_private,
+        home_phone, home_phone_private, mobile, mobile_private, email, email_private,
+        gender, gdpr, committee_email):
     if not has_request_context():
         return ""
 
-    if not person_id:
+    if not bool(person_id):
         return "Person ID is required"
+
+    if not bool(first_name) or not bool(surname):
+        return "First name and surname are required"
 
     try:
         person_id = ObjectId(person_id)
@@ -69,7 +72,7 @@ def update_person(person_id, address, postcode, address_private, home_phone,
         return f"Invalid person ID: {e}"
 
     update_payload = {
-        '$set': {},
+        '$set': {'first_name': first_name, 'surname': surname},
         '$unset': {}
     }
     

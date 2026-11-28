@@ -7,7 +7,7 @@ grey_out = {
 update_mapping = {
     'productions': {
         'value': {
-            'venue': 'venue', 'author': 'author',
+            'title': 'title', 'venue': 'venue', 'author': 'author',
             'festival': 'festival', 'poster-url': 'poster_url'
         },
         'date': {'open': 'open_date', 'close': 'close_date'},
@@ -17,12 +17,13 @@ update_mapping = {
         'date': {},
     },
     'festivals': {
-        'value': {'venue': 'venue', 'poster-url': 'poster_url'},
+        'value': {'title': 'title', 'venue': 'venue', 'poster-url': 'poster_url'},
         'date': {'open': 'open_date', 'close': 'close_date'},
     },
     'people': {
         'value': {
-            'address': 'address', 'postcode': 'postcode', 'address-private': 'address_private',
+            'first-name': 'first_name', 'surname': 'surname', 'address': 'address',
+            'postcode': 'postcode', 'address-private': 'address_private',
             'home-phone': 'home_phone', 'home-phone-private': 'home_phone_private',
             'mobile': 'mobile', 'mobile-private': 'mobile_private', 'email': 'email',
             'email-private': 'email_private', 'gender': 'gender',
@@ -31,7 +32,7 @@ update_mapping = {
         'date': {'gdpr': 'gdpr'},
     },
     'committee': {
-        'value': {'list-rank': 'list_rank'},
+        'value': {'position-title': 'position', 'list-rank': 'list_rank'},
         'date': {},
     },
     'balance': {

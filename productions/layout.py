@@ -25,7 +25,7 @@ productions_lookup_layout = [
         id='f-productions-details',
         columnDefs=[
             {'field': 'detail', 'width': 300},
-            {'field': 'info', 'width': 400},
+            {'field': 'info', 'width': 750},
         ],
         dashGridOptions={
             'headerHeight': 0,
@@ -116,6 +116,8 @@ productions_update_layout = [
         [
             html.Label("Select Production: "),
             dcc.Dropdown(id='u-productions-select', options=[], placeholder='Select Production'),
+            html.Label("Title: "),
+            dcc.Input(id='u-productions-title', type='text'),
             html.Label("Venue: "),
             dcc.Input(id='u-productions-venue', type='text'),
             html.Label("Author: "),
